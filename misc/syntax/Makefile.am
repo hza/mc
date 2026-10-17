@@ -105,6 +105,7 @@ SYNTAXFILES =			\
 	toml.syntax		\
 	tree-meta.syntax	\
 	ts.syntax		\
+	tsv.syntax		\
 	tsx.syntax		\
 	tt.syntax		\
 	unknown.syntax		\

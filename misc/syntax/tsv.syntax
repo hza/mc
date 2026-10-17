@@ -1,0 +1,18 @@
+# Tab-separated values (.tsv)
+#
+# Lines starting with # are comments.  The first column is highlighted as a
+# key; after it, every second column is highlighted so that neighbouring
+# columns stay apart.  Patterns cannot count columns, so the colors
+# alternate rather than following the column number.
+
+context default
+    # first column: up to the first tab (ASCII without brackets and braces,
+    # which the pattern syntax cannot list)
+    keyword linestart \{0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"$%&'()\*\+,-./:;<=>?@\\^_`|~\}\[0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&'()\*\+,-./:;<=>?@\\^_`|~\s\] ENTITY_NAME_TAG
+    # every second column after it: a tab, the field and the closing tab
+    keyword \t*\t STRING_UNQUOTED
+    keyword \t\t STRING_UNQUOTED
+    keyword \t*\n STRING_UNQUOTED
+
+context linestart # \n COMMENT_LINE
+    spellcheck
