@@ -35,6 +35,22 @@ context default
     keyword whole pushd SUPPORT_FUNCTION
     keyword whole rd SUPPORT_FUNCTION
     keyword wholeleft rem\s*\n COMMENT_LINE
+    keyword wholeleft rem\n COMMENT_LINE
+    keyword whole defined KEYWORD_OPERATOR_WORD
+    keyword whole exist KEYWORD_OPERATOR_WORD
+    keyword whole equ KEYWORD_OPERATOR_WORD
+    keyword whole neq KEYWORD_OPERATOR_WORD
+    keyword whole lss KEYWORD_OPERATOR_WORD
+    keyword whole leq KEYWORD_OPERATOR_WORD
+    keyword whole gtr KEYWORD_OPERATOR_WORD
+    keyword whole geq KEYWORD_OPERATOR_WORD
+    keyword whole nul CONSTANT_LANGUAGE
+    keyword whole enabledelayedexpansion CONSTANT_LANGUAGE
+    keyword whole disabledelayedexpansion CONSTANT_LANGUAGE
+    keyword whole enableextensions CONSTANT_LANGUAGE
+    keyword whole disableextensions CONSTANT_LANGUAGE
+    # goto :label, call :label, goto :eof
+    keyword \s:\{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_\}\[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789.-\] ENTITY_NAME_LABEL
     keyword whole ren SUPPORT_FUNCTION
     keyword whole rename SUPPORT_FUNCTION
     keyword whole rmdir SUPPORT_FUNCTION
@@ -45,7 +61,98 @@ context default
     keyword whole type SUPPORT_FUNCTION
     keyword whole ver SUPPORT_FUNCTION
 
+    keyword whole assoc SUPPORT_FUNCTION
+    keyword whole attrib SUPPORT_FUNCTION
+    keyword whole bcdedit SUPPORT_FUNCTION
+    keyword whole certutil SUPPORT_FUNCTION
+    keyword whole chcp SUPPORT_FUNCTION
+    keyword whole choice SUPPORT_FUNCTION
+    keyword whole cipher SUPPORT_FUNCTION
+    keyword whole clip SUPPORT_FUNCTION
+    keyword whole cmd SUPPORT_FUNCTION
+    keyword whole color SUPPORT_FUNCTION
+    keyword whole comp SUPPORT_FUNCTION
+    keyword whole compact SUPPORT_FUNCTION
+    keyword whole curl SUPPORT_FUNCTION
+    keyword whole date SUPPORT_FUNCTION
+    keyword whole diskpart SUPPORT_FUNCTION
+    keyword whole doskey SUPPORT_FUNCTION
+    keyword whole driverquery SUPPORT_FUNCTION
+    keyword whole fc SUPPORT_FUNCTION
+    keyword whole find SUPPORT_FUNCTION
+    keyword whole findstr SUPPORT_FUNCTION
+    keyword whole forfiles SUPPORT_FUNCTION
+    keyword whole format SUPPORT_FUNCTION
+    keyword whole ftype SUPPORT_FUNCTION
+    keyword whole hostname SUPPORT_FUNCTION
+    keyword whole icacls SUPPORT_FUNCTION
+    keyword whole ipconfig SUPPORT_FUNCTION
+    keyword whole label SUPPORT_FUNCTION
+    keyword whole mklink SUPPORT_FUNCTION
+    keyword whole mode SUPPORT_FUNCTION
+    keyword whole more SUPPORT_FUNCTION
+    keyword whole msiexec SUPPORT_FUNCTION
+    keyword whole net SUPPORT_FUNCTION
+    keyword whole netsh SUPPORT_FUNCTION
+    keyword whole netstat SUPPORT_FUNCTION
+    keyword whole path SUPPORT_FUNCTION
+    keyword whole ping SUPPORT_FUNCTION
+    keyword whole powershell SUPPORT_FUNCTION
+    keyword whole print SUPPORT_FUNCTION
+    keyword whole prompt SUPPORT_FUNCTION
+    keyword whole pwsh SUPPORT_FUNCTION
+    keyword whole reg SUPPORT_FUNCTION
+    keyword whole regsvr32 SUPPORT_FUNCTION
+    keyword whole replace SUPPORT_FUNCTION
+    keyword whole robocopy SUPPORT_FUNCTION
+    keyword whole runas SUPPORT_FUNCTION
+    keyword whole sc SUPPORT_FUNCTION
+    keyword whole schtasks SUPPORT_FUNCTION
+    keyword whole sort SUPPORT_FUNCTION
+    keyword whole start SUPPORT_FUNCTION
+    keyword whole subst SUPPORT_FUNCTION
+    keyword whole systeminfo SUPPORT_FUNCTION
+    keyword whole takeown SUPPORT_FUNCTION
+    keyword whole tar SUPPORT_FUNCTION
+    keyword whole taskkill SUPPORT_FUNCTION
+    keyword whole tasklist SUPPORT_FUNCTION
+    keyword whole time SUPPORT_FUNCTION
+    keyword whole timeout SUPPORT_FUNCTION
+    keyword whole title SUPPORT_FUNCTION
+    keyword whole tree SUPPORT_FUNCTION
+    keyword whole verify SUPPORT_FUNCTION
+    keyword whole vol SUPPORT_FUNCTION
+    keyword whole where SUPPORT_FUNCTION
+    keyword whole whoami SUPPORT_FUNCTION
+    keyword whole wmic SUPPORT_FUNCTION
+    keyword whole xcopy SUPPORT_FUNCTION
+    keyword whole java SUPPORT_FUNCTION
+    keyword whole javac SUPPORT_FUNCTION
+    keyword whole mvn SUPPORT_FUNCTION
+    keyword whole gradle SUPPORT_FUNCTION
+    keyword whole git SUPPORT_FUNCTION
+    keyword whole npm SUPPORT_FUNCTION
+    keyword whole node SUPPORT_FUNCTION
+    keyword whole python SUPPORT_FUNCTION
+    keyword whole pip SUPPORT_FUNCTION
+    keyword whole dotnet SUPPORT_FUNCTION
+
     keyword \\ PUNCTUATION_SEPARATOR
+    # ^ continues a line or escapes the next character
+    keyword ^\n PUNCTUATION_SEPARATOR_CONTINUATION
+    keyword ^\{&|<>^()%!"\} CONSTANT_CHARACTER_ESCAPE
+    # for loop variables: %%i, %%~nxi
+    keyword %%~\[abcdefghijklmnopqrstuvwxyz$:\] VARIABLE_OTHER
+    keyword %%\{abcdefghijklmnopqrstuvwxyz\} VARIABLE_OTHER
+    keyword %% CONSTANT_CHARACTER_ESCAPE
+    # delayed expansion: !name!
+    keyword !\[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789:~,-\]! VARIABLE_OTHER
+    keyword && KEYWORD_OPERATOR
+    keyword || KEYWORD_OPERATOR
+    keyword & KEYWORD_OPERATOR
+    keyword == KEYWORD_OPERATOR
+    keyword ( PUNCTUATION_SECTION
+    keyword ) PUNCTUATION_SECTION
     keyword whole \%\* VARIABLE_OTHER
     keyword whole \%\$ VARIABLE_OTHER
     keyword whole \%\[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789\]+\% VARIABLE_OTHER
@@ -55,10 +162,11 @@ context default
     keyword < KEYWORD_OPERATOR
     keyword | KEYWORD_OPERATOR
 
-context ' ' STRING_QUOTED_SINGLE
-    spellcheck
-
 context " " STRING_QUOTED_DOUBLE
+    keyword %%~\[abcdefghijklmnopqrstuvwxyz$:\] VARIABLE_OTHER
+    keyword %%\{abcdefghijklmnopqrstuvwxyz\} VARIABLE_OTHER
+    keyword %% CONSTANT_CHARACTER_ESCAPE
+    keyword !\[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789:~,-\]! VARIABLE_OTHER
     keyword whole \%\[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789\]+\% VARIABLE_OTHER
     keyword whole \%\[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789@~\]+ VARIABLE_OTHER
     spellcheck
