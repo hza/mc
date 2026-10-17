@@ -76,6 +76,8 @@ gboolean auto_syntax = TRUE;
 
 /* bytes */
 #define SYNTAX_MARKER_DENSITY 512
+// include files may include other files up to this depth
+#define SYNTAX_INCLUDE_MAX    4
 
 #define RULE_ON_LEFT_BORDER   1
 #define RULE_ON_RIGHT_BORDER  2
@@ -551,9 +553,11 @@ apply_rules_going_right (WEdit *edit, off_t i)
                 if (e > 0)
                 {
                     /* when both context and keyword terminate with a newline,
-                       the context overflows to the next line and colorizes it incorrectly */
+                       the context overflows to the next line and colorizes it incorrectly;
+                       a line continuation (backslash, newline) must keep the newline */
                     if (e > i + 1 && _rule._context != 0
-                        && k->keyword->str[k->keyword->len - 1] == '\n')
+                        && k->keyword->str[k->keyword->len - 1] == '\n'
+                        && strcmp (k->keyword->str, "\\\n") != 0)
                     {
                         r = CONTEXT_RULE (g_ptr_array_index (edit->rules, _rule._context));
                         if (r->right != NULL && r->right->len != 0
@@ -1049,7 +1053,11 @@ xx_lowerize_pattern (const WEdit *edit, char *pattern)
 static int
 edit_read_syntax_rules (WEdit *edit, FILE *f, char **args, int args_size)
 {
-    FILE *g = NULL;
+    // files that include the one being read, innermost last
+    FILE *includers[SYNTAX_INCLUDE_MAX];
+    char *includer_names[SYNTAX_INCLUDE_MAX];
+    int includer_lines[SYNTAX_INCLUDE_MAX];
+    int depth = 0;
     tty_color_pair_t color;
     char last_fg[BUF_TINY / 2] = "";
     char last_bg[BUF_TINY / 2] = "";
@@ -1058,7 +1066,7 @@ edit_read_syntax_rules (WEdit *edit, FILE *f, char **args, int args_size)
     char whole_right[BUF_MEDIUM];
     char whole_left[BUF_MEDIUM];
     char *l = NULL;
-    int save_line = 0, line = 0;
+    int line = 0;
     context_rule_t *c = NULL;
     gboolean no_words = TRUE;
     int result = 0;
@@ -1084,21 +1092,20 @@ edit_read_syntax_rules (WEdit *edit, FILE *f, char **args, int args_size)
         l = NULL;
 
         len = read_one_line (&l, f);
-        if (len == 0)
+        // end of an included file: continue after the include line
+        while (len == 0 && depth > 0)
         {
-            if (g == NULL)
-                break;
-
             fclose (f);
-            f = g;
-            g = NULL;
-            line = save_line + 1;
-            MC_PTR_FREE (error_file_name);
+            depth--;
+            f = includers[depth];
+            line = includer_lines[depth] + 1;
+            g_free (error_file_name);
+            error_file_name = includer_names[depth];
             MC_PTR_FREE (l);
             len = read_one_line (&l, f);
-            if (len == 0)
-                break;
         }
+        if (len == 0)
+            break;
 
         argc = get_args (l, args, args_size);
         a = args + 1;
@@ -1108,20 +1115,29 @@ edit_read_syntax_rules (WEdit *edit, FILE *f, char **args, int args_size)
         }
         else if (strcmp (args[0], "include") == 0)
         {
-            if (g != NULL || argc != 2)
+            FILE *inc;
+            char *name;
+
+            if (depth >= SYNTAX_INCLUDE_MAX || argc != 2)
             {
                 result = line;
                 break;
             }
-            g = f;
-            f = open_include_file (args[1]);
-            if (f == NULL)
+            name = error_file_name;
+            error_file_name = NULL;
+            inc = open_include_file (args[1]);
+            if (inc == NULL)
             {
-                MC_PTR_FREE (error_file_name);
+                g_free (error_file_name);
+                error_file_name = name;
                 result = line;
                 break;
             }
-            save_line = line;
+            includers[depth] = f;
+            includer_names[depth] = name;
+            includer_lines[depth] = line;
+            depth++;
+            f = inc;
             line = 0;
         }
         else if (strcmp (args[0], "caseinsensitive") == 0)
@@ -1358,6 +1374,15 @@ edit_read_syntax_rules (WEdit *edit, FILE *f, char **args, int args_size)
         MC_PTR_FREE (l);
     }
     MC_PTR_FREE (l);
+
+    // an error inside an included file: report it there, close the files it left open
+    while (depth > 0)
+    {
+        fclose (f);
+        depth--;
+        f = includers[depth];
+        g_free (includer_names[depth]);
+    }
 
     if (edit->rules->len == 0)
     {
