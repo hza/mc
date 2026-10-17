@@ -168,6 +168,9 @@ include js.syntax
 file ..\*\\.((?i:json5?)|sublime-color-scheme)$ JSON\sFile
 include json.syntax
 
+file ..\*\\.(?i:[jt]sx)$ JSX\sProgram
+include tsx.syntax
+
 file ..\*\\.(?i:e?ts)$ TypeScript\sProgram
 include ts.syntax
 

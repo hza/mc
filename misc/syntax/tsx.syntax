@@ -1,0 +1,327 @@
+#
+# TSX and JSX syntax highlighting
+# for MC Editor/CoolEdit
+#
+# Based on ts.syntax, with JSX tags in the style of html.syntax.
+#
+# Limitations: contexts do not nest, so text between tags is highlighted
+# as TypeScript, and a '>' (other than '=>') inside a {...} attribute value
+# ends the tag.
+# A tag must not follow a word character, which keeps generics such as
+# Array<string> from being taken for tags.
+#
+
+context default
+
+
+    #=========================
+    # Keywords
+    keyword whole abstract STORAGE_MODIFIER
+    keyword whole arguments VARIABLE_LANGUAGE
+    keyword whole as SUPPORT_CLASS
+    keyword whole async STORAGE_MODIFIER
+    keyword whole await KEYWORD_CONTROL
+    keyword whole break KEYWORD_CONTROL
+    keyword whole caller VARIABLE_LANGUAGE
+    keyword whole case KEYWORD_CONTROL
+    keyword whole catch KEYWORD_CONTROL
+    keyword whole class STORAGE_TYPE_CLASS
+    keyword whole constructor KEYWORD_OTHER_RESERVED
+    keyword whole const STORAGE_MODIFIER
+    keyword whole continue KEYWORD_CONTROL
+    keyword whole debugger KEYWORD_OTHER_RESERVED
+    keyword whole declare STORAGE_MODIFIER
+    keyword whole default KEYWORD_CONTROL
+    keyword whole delete KEYWORD_OTHER_RESERVED
+    keyword whole do KEYWORD_CONTROL
+    keyword whole else KEYWORD_CONTROL
+    keyword whole enum STORAGE_TYPE_CLASS
+    keyword whole export KEYWORD_CONTROL_IMPORT
+    keyword whole extends KEYWORD_OTHER_RESERVED
+    keyword whole finally KEYWORD_CONTROL
+    keyword whole for KEYWORD_CONTROL
+    keyword whole from KEYWORD_CONTROL_IMPORT
+    keyword whole function STORAGE_TYPE_FUNCTION
+    keyword whole get KEYWORD_OTHER_RESERVED
+    keyword whole if KEYWORD_CONTROL
+    keyword whole implements KEYWORD_OTHER_RESERVED
+    keyword whole import KEYWORD_CONTROL_IMPORT
+    keyword whole instanceof KEYWORD_OPERATOR_WORD
+    keyword whole interface STORAGE_TYPE_CLASS
+    keyword whole in KEYWORD_OPERATOR_WORD
+    keyword whole let STORAGE_MODIFIER
+    keyword whole module KEYWORD_OTHER_RESERVED
+    keyword whole namespace KEYWORD_OTHER_RESERVED
+    keyword whole new KEYWORD_OTHER_NEW
+    keyword whole of KEYWORD_CONTROL
+    keyword whole private STORAGE_MODIFIER
+    keyword whole protected STORAGE_MODIFIER
+    keyword whole prototype KEYWORD_OTHER_RESERVED
+    keyword whole public STORAGE_MODIFIER
+    keyword whole readonly STORAGE_MODIFIER
+    keyword whole return KEYWORD_CONTROL
+    keyword whole set KEYWORD_OTHER_RESERVED
+    keyword whole static STORAGE_MODIFIER
+    keyword whole super VARIABLE_LANGUAGE
+    keyword whole switch KEYWORD_CONTROL
+    keyword whole this VARIABLE_LANGUAGE
+    keyword whole throw KEYWORD_CONTROL
+    keyword whole try KEYWORD_CONTROL
+    keyword whole typeof KEYWORD_OPERATOR_WORD
+    keyword whole var STORAGE_MODIFIER
+    keyword whole while KEYWORD_CONTROL
+    keyword whole with KEYWORD_CONTROL
+    keyword whole yield KEYWORD_CONTROL
+
+    #=========================
+    # Basic Types
+    keyword whole any STORAGE_TYPE_PRIMITIVE
+    keyword whole bigint STORAGE_TYPE_PRIMITIVE
+    keyword whole boolean STORAGE_TYPE_PRIMITIVE
+    keyword whole never STORAGE_TYPE_PRIMITIVE
+    keyword whole null CONSTANT_LANGUAGE
+    keyword whole number STORAGE_TYPE_PRIMITIVE
+    keyword whole object STORAGE_TYPE
+    keyword whole string STORAGE_TYPE_PRIMITIVE
+    keyword whole symbol STORAGE_TYPE_PRIMITIVE
+    keyword whole undefined STORAGE_TYPE_PRIMITIVE
+    keyword whole unknown STORAGE_TYPE_PRIMITIVE
+    keyword whole void STORAGE_TYPE_PRIMITIVE
+    keyword whole T STORAGE_TYPE
+
+    #=========================
+    # Objects
+    keyword whole AbortController SUPPORT_CLASS
+    keyword whole AbortSignal SUPPORT_CLASS
+    keyword whole AggregateError SUPPORT_CLASS
+    keyword whole Array SUPPORT_CLASS
+    keyword whole ArrayBuffer SUPPORT_CLASS
+    keyword whole AsyncFunction SUPPORT_CLASS
+    keyword whole AsyncGenerator SUPPORT_CLASS
+    keyword whole AsyncGeneratorFunction SUPPORT_CLASS
+    keyword whole Atomics SUPPORT_CLASS
+    keyword whole BigInt64Array SUPPORT_CLASS
+    keyword whole BigInt SUPPORT_CLASS
+    keyword whole BigUint64Array SUPPORT_CLASS
+    keyword whole Blob SUPPORT_CLASS
+    keyword whole Boolean SUPPORT_CLASS
+    keyword whole Buffer SUPPORT_CLASS
+    keyword whole DataView SUPPORT_CLASS
+    keyword whole Date SUPPORT_CLASS
+    keyword whole DOMException SUPPORT_CLASS
+    keyword whole Error SUPPORT_CLASS
+    keyword whole EvalError SUPPORT_CLASS
+    keyword whole Float32Array SUPPORT_CLASS
+    keyword whole Float64Array SUPPORT_CLASS
+    keyword whole Function SUPPORT_CLASS
+    keyword whole Generator SUPPORT_CLASS
+    keyword whole GeneratorFunction SUPPORT_CLASS
+    keyword whole global SUPPORT_CLASS
+    keyword whole globalThis SUPPORT_CLASS
+    keyword whole Image SUPPORT_CLASS
+    keyword whole Infinity CONSTANT_LANGUAGE
+    keyword whole Int16Array SUPPORT_CLASS
+    keyword whole Int32Array SUPPORT_CLASS
+    keyword whole Int8Array SUPPORT_CLASS
+    keyword whole Intl SUPPORT_CLASS
+    keyword whole JSON SUPPORT_CLASS
+    keyword whole Map SUPPORT_CLASS
+    keyword whole Math SUPPORT_CLASS
+    keyword whole Number SUPPORT_CLASS
+    keyword whole Object SUPPORT_CLASS
+    keyword whole Promise SUPPORT_CLASS
+    keyword whole Promise SUPPORT_CLASS
+    keyword whole Proxy SUPPORT_CLASS
+    keyword whole RangeError SUPPORT_CLASS
+    keyword whole ReferenceError SUPPORT_CLASS
+    keyword whole Reflect SUPPORT_CLASS
+    keyword whole RegExp SUPPORT_CLASS
+    keyword whole Set SUPPORT_CLASS
+    keyword whole SharedArrayBuffer SUPPORT_CLASS
+    keyword whole SyntaxError SUPPORT_CLASS
+    keyword whole TextDecoder SUPPORT_CLASS
+    keyword whole TypeError SUPPORT_CLASS
+    keyword whole Uint16Array SUPPORT_CLASS
+    keyword whole Uint32Array SUPPORT_CLASS
+    keyword whole Uint8Array SUPPORT_CLASS
+    keyword whole Uint8ClampedArray SUPPORT_CLASS
+    keyword whole URIError SUPPORT_CLASS
+    keyword whole URL SUPPORT_CLASS
+    keyword whole URLSearchParams SUPPORT_CLASS
+    keyword whole WeakMap SUPPORT_CLASS
+    keyword whole WeakSet SUPPORT_CLASS
+    keyword whole WebAssembly SUPPORT_CLASS
+    keyword whole window SUPPORT_CLASS
+
+    #=========================
+    # Most common functions
+    keyword whole alert SUPPORT_FUNCTION
+    keyword whole clearInterval SUPPORT_FUNCTION
+    keyword whole clearTimeout SUPPORT_FUNCTION
+    keyword whole console SUPPORT_CLASS
+    keyword whole decodeURIComponent SUPPORT_FUNCTION
+    keyword whole decodeURI SUPPORT_FUNCTION
+    keyword whole encodeURIComponent SUPPORT_FUNCTION
+    keyword whole escape SUPPORT_FUNCTION
+    keyword whole eval SUPPORT_FUNCTION
+    keyword whole fetch SUPPORT_FUNCTION
+    keyword whole isFinite SUPPORT_FUNCTION
+    keyword whole isNaN SUPPORT_FUNCTION
+    keyword whole module KEYWORD_OTHER_RESERVED
+    keyword whole parseFloat SUPPORT_FUNCTION
+    keyword whole parseInt SUPPORT_FUNCTION
+    keyword whole performance SUPPORT_CLASS
+    keyword whole process SUPPORT_CLASS
+    keyword whole queueMicrotask SUPPORT_FUNCTION
+    keyword whole require SUPPORT_FUNCTION
+    keyword whole setImmediate SUPPORT_FUNCTION
+    keyword whole setInterval SUPPORT_FUNCTION
+    keyword whole setTimeout SUPPORT_FUNCTION
+    keyword whole structuredClone SUPPORT_FUNCTION
+    keyword whole unescape SUPPORT_FUNCTION
+
+    #=========================
+    # Constants
+    keyword whole true CONSTANT_LANGUAGE
+    keyword whole false CONSTANT_LANGUAGE
+    keyword whole NaN CONSTANT_LANGUAGE
+    keyword whole __dirname CONSTANT_OTHER
+    keyword whole __filename CONSTANT_OTHER
+
+    #=========================
+    # Comments
+    keyword /\* COMMENT_BLOCK
+    keyword \*/ COMMENT_BLOCK
+    keyword // COMMENT_LINE
+
+    #=========================
+    # Numbers
+    wholechars abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.
+
+    keyword whole 0\{xX\}\{0123456789abcdefABCDEF\}\[0123456789abcdefABCDEF\] CONSTANT_NUMERIC
+    keyword whole \{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \[0123456789\]\.\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \{0123456789\}\[0123456789\]\.\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \{0123456789\}\[0123456789\]\{eE\}\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \{0123456789\}\[0123456789\]\{eE\}\{\-\+\}\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \{0123456789\}\[0123456789\]\.\{0123456789\}\[0123456789\]\{eE\}\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \{0123456789\}\[0123456789\]\.\{0123456789\}\[0123456789\]\{eE\}\{\-\+\}\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+
+    #=========================
+    # JSX closing tags and fragments
+    keyword </\{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz\}\[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_.:-\]> ENTITY_NAME_TAG
+    keyword </> ENTITY_NAME_TAG
+    keyword <> ENTITY_NAME_TAG
+
+    #=========================
+    # An apostrophe after a letter is JSX text (Can't), not the start of
+    # a string; consume it so it does not open a ' ' context.
+    keyword \{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789\}'
+
+    #=========================
+    # Special symbols
+    keyword => KEYWORD_OPERATOR
+    keyword \. PUNCTUATION_SEPARATOR
+    keyword \* KEYWORD_OPERATOR
+    keyword \+ KEYWORD_OPERATOR
+    keyword - KEYWORD_OPERATOR
+    keyword / KEYWORD_OPERATOR
+    keyword % KEYWORD_OPERATOR
+    keyword = KEYWORD_OPERATOR
+    keyword ! KEYWORD_OPERATOR
+    keyword & KEYWORD_OPERATOR
+    keyword | KEYWORD_OPERATOR
+    keyword ^ KEYWORD_OPERATOR
+    keyword ~ KEYWORD_OPERATOR
+    keyword > KEYWORD_OPERATOR
+    # A bare '<' would start before the JSX tag context; match only
+    # the forms that cannot open a tag.
+    keyword <= KEYWORD_OPERATOR
+    keyword << KEYWORD_OPERATOR
+    keyword <\s KEYWORD_OPERATOR
+    keyword wholeright @+ STORAGE_TYPE_ANNOTATION
+
+    #=========================
+    # Separators
+    keyword { PUNCTUATION_SECTION
+    keyword } PUNCTUATION_SECTION
+    keyword ( PUNCTUATION_SECTION
+    keyword ) PUNCTUATION_SECTION
+    keyword [ PUNCTUATION_SECTION
+    keyword ] PUNCTUATION_SECTION
+    keyword , PUNCTUATION_SEPARATOR
+    keyword ? PUNCTUATION_SEPARATOR
+    keyword : PUNCTUATION_SEPARATOR
+    keyword ; PUNCTUATION_TERMINATOR
+
+# Function return type
+context exclusive wholeright ): \n STORAGE_TYPE
+    keyword ; PUNCTUATION_TERMINATOR
+    keyword { PUNCTUATION_SECTION
+
+#=============================
+# JSX tags
+
+context wholeleft <\{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz\}\[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_.:-\] > ENTITY_NAME_TAG
+    keyword whole \{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_\}\[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_:-\] ENTITY_OTHER_ATTRIBUTE_NAME
+    keyword => KEYWORD_OPERATOR
+    keyword = KEYWORD_OPERATOR
+    keyword / ENTITY_NAME_TAG
+    keyword "*" STRING_QUOTED_DOUBLE
+    keyword '*' STRING_QUOTED_SINGLE
+    keyword { PUNCTUATION_SECTION
+    keyword } PUNCTUATION_SECTION
+
+#=============================
+# Comments
+
+context exclusive /\* \*/ COMMENT_BLOCK
+    spellcheck
+    keyword whole BUG KEYWORD_OTHER_TODO
+    keyword whole FixMe KEYWORD_OTHER_TODO
+    keyword whole FIXME KEYWORD_OTHER_TODO
+    keyword whole Note KEYWORD_OTHER_TODO
+    keyword whole NOTE KEYWORD_OTHER_TODO
+    keyword whole ToDo KEYWORD_OTHER_TODO
+    keyword whole TODO KEYWORD_OTHER_TODO
+    keyword !!\[!\] KEYWORD_OTHER_TODO
+    keyword ??\[?\] KEYWORD_OTHER_TODO
+
+
+context exclusive // \n COMMENT_LINE
+    spellcheck
+    keyword whole BUG KEYWORD_OTHER_TODO
+    keyword whole FixMe KEYWORD_OTHER_TODO
+    keyword whole FIXME KEYWORD_OTHER_TODO
+    keyword whole Note KEYWORD_OTHER_TODO
+    keyword whole NOTE KEYWORD_OTHER_TODO
+    keyword whole ToDo KEYWORD_OTHER_TODO
+    keyword whole TODO KEYWORD_OTHER_TODO
+    keyword !!\[!\] KEYWORD_OTHER_TODO
+    keyword ??\[?\] KEYWORD_OTHER_TODO
+
+
+#=============================
+# Strings
+
+context " " STRING_QUOTED_DOUBLE
+    spellcheck
+    keyword \\\{\\'"abtnvfr\} CONSTANT_CHARACTER_ESCAPE
+    keyword \\\{0123\}\{01234567\}\{01234567\} CONSTANT_CHARACTER_ESCAPE
+
+    keyword ' CONSTANT_NUMERIC
+
+context ' ' STRING_QUOTED_SINGLE
+    spellcheck
+    keyword \\\{\\'"abtnvfr\} CONSTANT_CHARACTER_ESCAPE
+    keyword \\\{0123\}\{01234567\}\{01234567\} CONSTANT_CHARACTER_ESCAPE
+
+    keyword " CONSTANT_NUMERIC
+
+context ` ` STRING_QUOTED_OTHER
+    spellcheck
+    keyword \\\{\\'"abtnvfr\} CONSTANT_CHARACTER_ESCAPE
+    keyword \\\{0123\}\{01234567\}\{01234567\} CONSTANT_CHARACTER_ESCAPE
+    keyword ${*} PUNCTUATION_SECTION
+
+

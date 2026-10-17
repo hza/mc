@@ -104,6 +104,7 @@ SYNTAXFILES =			\
 	toml.syntax		\
 	tree-meta.syntax	\
 	ts.syntax		\
+	tsx.syntax		\
 	tt.syntax		\
 	unknown.syntax		\
 	verilog.syntax		\
