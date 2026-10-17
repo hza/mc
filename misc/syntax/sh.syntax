@@ -13,8 +13,8 @@ context default
     keyword \\` CONSTANT_CHARACTER_ESCAPE
     keyword ` PUNCTUATION_SECTION
     keyword ; PUNCTUATION_TERMINATOR
-    keyword $(*"$(*)"*) VARIABLE_OTHER
-    keyword $(*) VARIABLE_OTHER
+    # $( command ) is highlighted with the default rules
+    nested $( ) VARIABLE_OTHER
     keyword ${*"${*}"*} VARIABLE_OTHER
     keyword ${*} VARIABLE_OTHER
     keyword { PUNCTUATION_SECTION
@@ -1106,9 +1106,8 @@ context " " STRING_QUOTED_DOUBLE
     keyword \\\\ CONSTANT_CHARACTER_ESCAPE
     keyword \\` CONSTANT_CHARACTER_ESCAPE
     keyword \\" CONSTANT_CHARACTER_ESCAPE
-    # $ inside $
-    keyword $(*"$(*)"*) VARIABLE_OTHER
-    keyword $(*) VARIABLE_OTHER
+    # $( command ) is highlighted with the default rules
+    nested $( ) VARIABLE_OTHER
     # $ inside $
     keyword ${*"${*}"*} VARIABLE_OTHER
     keyword ${*} VARIABLE_OTHER
@@ -1131,9 +1130,8 @@ context exclusive ` ` STRING_QUOTED_OTHER black
     keyword " STRING_QUOTED_DOUBLE
     keyword \\` CONSTANT_CHARACTER_ESCAPE
     keyword ; PUNCTUATION_TERMINATOR
-    # fix $ inside $
-    keyword $(*"$(*)"*) VARIABLE_OTHER
-    keyword $(*) VARIABLE_OTHER
+    # $( command ) is highlighted with the default rules
+    nested $( ) VARIABLE_OTHER
     # fix $ inside $
     keyword ${*"${*}"*} VARIABLE_OTHER
     keyword ${*} VARIABLE_OTHER

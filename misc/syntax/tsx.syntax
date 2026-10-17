@@ -4,9 +4,7 @@
 #
 # Based on ts.syntax, with JSX tags in the style of html.syntax.
 #
-# Limitations: contexts do not nest, so text between tags is highlighted
-# as TypeScript, and a '>' (other than '=>') inside a {...} attribute value
-# ends the tag.
+# Limitations: text between tags is highlighted as TypeScript.
 # A tag must not follow a word character, which keeps generics such as
 # Array<string> from being taken for tags.
 #
@@ -269,8 +267,8 @@ context wholeleft <\{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz\}\[ABC
     keyword / ENTITY_NAME_TAG
     keyword "*" STRING_QUOTED_DOUBLE
     keyword '*' STRING_QUOTED_SINGLE
-    keyword { PUNCTUATION_SECTION
-    keyword } PUNCTUATION_SECTION
+    # {expression} attribute values are highlighted with the default rules
+    nested { } PUNCTUATION_SECTION
 
 #=============================
 # Comments
@@ -322,8 +320,7 @@ context ` ` STRING_QUOTED_OTHER
     spellcheck
     keyword \\\{\\'"abtnvfr\} CONSTANT_CHARACTER_ESCAPE
     keyword \\\{0123\}\{01234567\}\{01234567\} CONSTANT_CHARACTER_ESCAPE
-    # one level of nested template: ${a ? `x${b}` : ""}
-    keyword ${*`*`*} PUNCTUATION_SECTION
-    keyword ${*} PUNCTUATION_SECTION
+    # ${ code } is highlighted with the default rules
+    nested ${ } PUNCTUATION_SECTION
 
 

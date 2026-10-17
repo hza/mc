@@ -292,8 +292,7 @@ context ` ` STRING_QUOTED_OTHER
     spellcheck
     keyword \\\{\\'"abtnvfr\} CONSTANT_CHARACTER_ESCAPE
     keyword \\\{0123\}\{01234567\}\{01234567\} CONSTANT_CHARACTER_ESCAPE
-    # one level of nested template: ${a ? `x${b}` : ""}
-    keyword ${*`*`*} PUNCTUATION_SECTION
-    keyword ${*} PUNCTUATION_SECTION
+    # ${ code } is highlighted with the default rules
+    nested ${ } PUNCTUATION_SECTION
 
 

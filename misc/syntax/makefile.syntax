@@ -1,7 +1,10 @@
 context default
     keyword $$ CONSTANT_CHARACTER_ESCAPE
-    keyword $(*) VARIABLE_OTHER
-    keyword ${*} VARIABLE_OTHER
+    # $(VAR) as a whole; $(function args) is highlighted with the default rules
+    keyword $(\[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_.@<^*%+?\]) VARIABLE_OTHER
+    keyword ${\[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_.@<^*%+?\]} VARIABLE_OTHER
+    nested $( ) VARIABLE_OTHER
+    nested ${ } VARIABLE_OTHER
 # GNU Makefiles
     keyword whole linestart define KEYWORD_OTHER
     keyword whole linestart endef KEYWORD_OTHER
@@ -64,8 +67,11 @@ context exclusive = \n STRING_UNQUOTED
     keyword "*" STRING_QUOTED_DOUBLE
     keyword \\\n PUNCTUATION_SEPARATOR_CONTINUATION
     keyword $$ CONSTANT_CHARACTER_ESCAPE
-    keyword $(*) VARIABLE_OTHER
-    keyword ${*} VARIABLE_OTHER
+    # $(VAR) as a whole; $(function args) is highlighted with the default rules
+    keyword $(\[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_.@<^*%+?\]) VARIABLE_OTHER
+    keyword ${\[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_.@<^*%+?\]} VARIABLE_OTHER
+    nested $( ) VARIABLE_OTHER
+    nested ${ } VARIABLE_OTHER
     keyword linestart \t default red
     keyword whole @+@ VARIABLE_OTHER black
     keyword @+@ VARIABLE_OTHER black
@@ -80,5 +86,8 @@ context " " STRING_QUOTED_DOUBLE
     keyword \\$ CONSTANT_CHARACTER_ESCAPE
     keyword \\` CONSTANT_CHARACTER_ESCAPE
     keyword $$ CONSTANT_CHARACTER_ESCAPE
-    keyword $(*) VARIABLE_OTHER
-    keyword ${*} VARIABLE_OTHER
+    # $(VAR) as a whole; $(function args) is highlighted with the default rules
+    keyword $(\[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_.@<^*%+?\]) VARIABLE_OTHER
+    keyword ${\[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_.@<^*%+?\]} VARIABLE_OTHER
+    nested $( ) VARIABLE_OTHER
+    nested ${ } VARIABLE_OTHER
