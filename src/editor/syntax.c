@@ -1845,6 +1845,7 @@ edit_syntax_scheme_dialog (WEdit *edit)
     for (i = 0; i < (int) names->len; i++)
     {
         const char *name = g_ptr_array_index (names, i);
+        const char *title = syntax_scheme_title (name);
         const char *type = syntax_scheme_type (name);
         char *label;
         int pad;
@@ -1852,8 +1853,8 @@ edit_syntax_scheme_dialog (WEdit *edit)
         if (type == NULL)
             type = "";
         // scheme format right-aligned
-        pad = MAX (1, width - str_term_width1 (name) - str_term_width1 (type));
-        label = g_strdup_printf ("%s%*s%s", name, pad, "", type);
+        pad = MAX (1, width - str_term_width1 (title) - str_term_width1 (type));
+        label = g_strdup_printf ("%s%*s%s", title, pad, "", type);
         LISTBOX_APPEND_TEXT (list, 0, label, NULL, FALSE);
         g_free (label);
         if (strcmp (name, saved) == 0)

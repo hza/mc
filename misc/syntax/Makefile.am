@@ -132,6 +132,7 @@ SCHEMEFILES =						\
 	schemes/night-owl.json					\
 	schemes/nord.sublime-color-scheme			\
 	schemes/rose-pine.sublime-color-scheme			\
+	schemes/schemes.ini					\
 	schemes/solarized-dark.sublime-color-scheme		\
 	schemes/solarized-light.sublime-color-scheme		\
 	schemes/tokyo-night-light.json				\

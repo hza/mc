@@ -186,6 +186,9 @@ static const struct
 // Sublime color schemes first, then VS Code color themes
 static const char *const scheme_exts[] = { SYNTAX_SCHEME_EXT, ".json" };
 
+// display names from the scheme index files, keyed by file name without extension
+static GHashTable *scheme_titles = NULL;
+
 static syntax_scheme_t *current_scheme = NULL;
 static char *current_name = NULL;
 // why the selected scheme could not be used, NULL if it loaded
@@ -1317,10 +1320,62 @@ parse_text (const char *text, const char *dir, GError **error)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/**
+ * (Re)read the display names from SYNTAX_SCHEME_INDEX in the system and then the user
+ * scheme directory, so that user entries override shipped ones.
+ */
+
+static void
+load_scheme_titles (void)
+{
+    const char *const roots[] = { mc_global.share_data_dir, mc_config_get_data_path () };
+    size_t i;
+
+    if (scheme_titles != NULL)
+        g_hash_table_remove_all (scheme_titles);
+    else
+        scheme_titles = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+
+    for (i = 0; i < G_N_ELEMENTS (roots); i++)
+    {
+        char *path;
+        mc_config_t *cfg;
+        char **keys, **k;
+
+        path = g_build_filename (roots[i], EDIT_SYNTAX_DIR, SYNTAX_SCHEME_DIR, SYNTAX_SCHEME_INDEX,
+                                 (char *) NULL);
+        cfg = exist_file (path) ? mc_config_init (path, TRUE) : NULL;
+        g_free (path);
+        if (cfg == NULL)
+            continue;
+
+        keys = mc_config_get_keys (cfg, "Schemes", NULL);
+        for (k = keys; *k != NULL; k++)
+        {
+            char *title;
+
+            title = mc_config_get_string_raw (cfg, "Schemes", *k, "");
+            if (*title != '\0')
+                g_hash_table_replace (scheme_titles, g_strdup (*k), title);
+            else
+                g_free (title);
+        }
+        g_strfreev (keys);
+        mc_config_deinit (cfg);
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static int
 compare_names (gconstpointer a, gconstpointer b)
 {
-    return g_ascii_strcasecmp (*(char *const *) a, *(char *const *) b);
+    const char *na = *(char *const *) a;
+    const char *nb = *(char *const *) b;
+    int r;
+
+    r = g_ascii_strcasecmp (syntax_scheme_title (na), syntax_scheme_title (nb));
+    return r != 0 ? r : g_ascii_strcasecmp (na, nb);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1529,7 +1584,7 @@ syntax_scheme_lookup (const char *ctx_token, const char *token, syntax_scheme_st
 /* --------------------------------------------------------------------------------------------- */
 /**
  * Names (without extension) of schemes found in the user and system scheme directories,
- * sorted, without duplicates.
+ * sorted by display name, without duplicates.  Rereads the scheme index.
  */
 
 GPtrArray *
@@ -1539,6 +1594,7 @@ syntax_scheme_list (void)
     GPtrArray *names;
     size_t i;
 
+    load_scheme_titles ();
     names = g_ptr_array_new_with_free_func (g_free);
 
     for (i = 0; i < G_N_ELEMENTS (roots); i++)
@@ -1612,6 +1668,22 @@ syntax_scheme_type (const char *name)
         type = g_str_has_suffix (path, SYNTAX_SCHEME_EXT) ? "Sublime" : "VS Code";
     g_free (path);
     return type;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Display name of scheme @name from the scheme index; @name itself if it has none.
+ */
+
+const char *
+syntax_scheme_title (const char *name)
+{
+    const char *title;
+
+    if (scheme_titles == NULL)
+        load_scheme_titles ();
+    title = g_hash_table_lookup (scheme_titles, name);
+    return title != NULL ? title : name;
 }
 
 /* --------------------------------------------------------------------------------------------- */
