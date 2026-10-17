@@ -56,6 +56,11 @@ context default
     keyword whole @+@ VARIABLE_OTHER black
     keyword @+@ VARIABLE_OTHER black
 
+# shell commands in recipes and $(shell ...)
+wholechars abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._
+    include sh-words.syntax
+wholechars abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_01234567890
+
 # comment
 context linestart # \n COMMENT_LINE
     spellcheck
