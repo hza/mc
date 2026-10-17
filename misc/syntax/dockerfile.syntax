@@ -58,6 +58,75 @@ context default
 
 wholechars abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._
 
+# Shell form of RUN, CMD and ENTRYPOINT: the rest of the instruction, including
+# lines continued with a backslash, is highlighted as a shell command.  The
+# instruction itself keeps its keyword color from the default context.
+context exclusive linestart RUN\{\s\t\} \n
+    keyword \\\n PUNCTUATION_SEPARATOR_CONTINUATION
+    keyword "*" STRING_QUOTED_DOUBLE
+    keyword '*' STRING_QUOTED_SINGLE
+    keyword ${*} VARIABLE_OTHER
+    keyword $(*) VARIABLE_OTHER
+    keyword wholeright $+ VARIABLE_OTHER
+    keyword && KEYWORD_OPERATOR
+    keyword || KEYWORD_OPERATOR
+    keyword | KEYWORD_OPERATOR
+    keyword ; PUNCTUATION_TERMINATOR
+    keyword whole 2>&1 KEYWORD_OPERATOR
+    keyword whole 2> KEYWORD_OPERATOR
+    keyword whole 1> KEYWORD_OPERATOR
+    keyword --mount VARIABLE_PARAMETER
+    keyword --device VARIABLE_PARAMETER
+    keyword --network VARIABLE_PARAMETER
+    keyword --security VARIABLE_PARAMETER
+    keyword [ PUNCTUATION_SECTION
+    keyword ] PUNCTUATION_SECTION
+    include sh-words.syntax
+
+context exclusive linestart CMD\{\s\t\} \n
+    keyword \\\n PUNCTUATION_SEPARATOR_CONTINUATION
+    keyword "*" STRING_QUOTED_DOUBLE
+    keyword '*' STRING_QUOTED_SINGLE
+    keyword ${*} VARIABLE_OTHER
+    keyword $(*) VARIABLE_OTHER
+    keyword wholeright $+ VARIABLE_OTHER
+    keyword && KEYWORD_OPERATOR
+    keyword || KEYWORD_OPERATOR
+    keyword | KEYWORD_OPERATOR
+    keyword ; PUNCTUATION_TERMINATOR
+    keyword whole 2>&1 KEYWORD_OPERATOR
+    keyword whole 2> KEYWORD_OPERATOR
+    keyword whole 1> KEYWORD_OPERATOR
+    keyword --mount VARIABLE_PARAMETER
+    keyword --device VARIABLE_PARAMETER
+    keyword --network VARIABLE_PARAMETER
+    keyword --security VARIABLE_PARAMETER
+    keyword [ PUNCTUATION_SECTION
+    keyword ] PUNCTUATION_SECTION
+    include sh-words.syntax
+
+context exclusive linestart ENTRYPOINT\{\s\t\} \n
+    keyword \\\n PUNCTUATION_SEPARATOR_CONTINUATION
+    keyword "*" STRING_QUOTED_DOUBLE
+    keyword '*' STRING_QUOTED_SINGLE
+    keyword ${*} VARIABLE_OTHER
+    keyword $(*) VARIABLE_OTHER
+    keyword wholeright $+ VARIABLE_OTHER
+    keyword && KEYWORD_OPERATOR
+    keyword || KEYWORD_OPERATOR
+    keyword | KEYWORD_OPERATOR
+    keyword ; PUNCTUATION_TERMINATOR
+    keyword whole 2>&1 KEYWORD_OPERATOR
+    keyword whole 2> KEYWORD_OPERATOR
+    keyword whole 1> KEYWORD_OPERATOR
+    keyword --mount VARIABLE_PARAMETER
+    keyword --device VARIABLE_PARAMETER
+    keyword --network VARIABLE_PARAMETER
+    keyword --security VARIABLE_PARAMETER
+    keyword [ PUNCTUATION_SECTION
+    keyword ] PUNCTUATION_SECTION
+    include sh-words.syntax
+
 # String values
 context ' ' STRING_QUOTED_SINGLE
 context " " STRING_QUOTED_DOUBLE
