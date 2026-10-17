@@ -210,6 +210,8 @@ context default
     # Separators
     keyword { PUNCTUATION_SECTION
     keyword } PUNCTUATION_SECTION
+    keyword @\{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_\}\[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_.\] STORAGE_TYPE_ANNOTATION
+
     keyword ( PUNCTUATION_SECTION
     keyword ) PUNCTUATION_SECTION
     keyword [ PUNCTUATION_SECTION
