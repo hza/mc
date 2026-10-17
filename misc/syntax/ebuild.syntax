@@ -368,64 +368,14 @@ context default
 
 wholechars abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._
 
-    keyword whole break KEYWORD_CONTROL
-    keyword whole case KEYWORD_CONTROL
-    keyword whole clear SUPPORT_FUNCTION
-    keyword whole continue KEYWORD_CONTROL
-    keyword whole declare SUPPORT_FUNCTION
-    keyword whole done KEYWORD_CONTROL
-    keyword whole do KEYWORD_CONTROL
-    keyword whole elif KEYWORD_CONTROL
-    keyword whole else KEYWORD_CONTROL
-    keyword whole esac KEYWORD_CONTROL
-    keyword whole exit KEYWORD_CONTROL
-    keyword whole export SUPPORT_FUNCTION
-    keyword whole fi KEYWORD_CONTROL
-    keyword whole for KEYWORD_CONTROL
-    keyword whole getopts SUPPORT_FUNCTION
-    keyword whole if KEYWORD_CONTROL
-    keyword whole in KEYWORD_CONTROL
+    include sh-words.syntax
     keyword whole local SUPPORT_FUNCTION
-    keyword whole read SUPPORT_FUNCTION
-    keyword whole return KEYWORD_CONTROL
-    keyword whole select KEYWORD_CONTROL
-    keyword whole shift SUPPORT_FUNCTION
-    keyword whole source SUPPORT_FUNCTION
-    keyword whole then KEYWORD_CONTROL
-    keyword whole trap SUPPORT_FUNCTION
-    keyword whole until KEYWORD_CONTROL
-    keyword whole unset SUPPORT_FUNCTION
-    keyword whole wait SUPPORT_FUNCTION
-    keyword whole while KEYWORD_CONTROL
 
 # here goes usable subset for .ebuild commands
-    keyword whole awk SUPPORT_FUNCTION
-    keyword whole cd SUPPORT_FUNCTION
-    keyword whole chown SUPPORT_FUNCTION
-    keyword whole chmod SUPPORT_FUNCTION
-    keyword whole cmake SUPPORT_FUNCTION
-    keyword whole cp SUPPORT_FUNCTION
-    keyword whole echo SUPPORT_FUNCTION
-    keyword whole egrep SUPPORT_FUNCTION
-    keyword whole fgrep SUPPORT_FUNCTION
-    keyword whole find SUPPORT_FUNCTION
-    keyword whole grep SUPPORT_FUNCTION
-    keyword whole ln SUPPORT_FUNCTION
-    keyword whole make SUPPORT_FUNCTION
-    keyword whole mkdir SUPPORT_FUNCTION
-    keyword whole mknod SUPPORT_FUNCTION
-    keyword whole mv SUPPORT_FUNCTION
-    keyword whole perl SUPPORT_FUNCTION
     keyword whole pod2man SUPPORT_FUNCTION
     keyword whole popd SUPPORT_FUNCTION
-    keyword whole printf SUPPORT_FUNCTION
     keyword whole pushd SUPPORT_FUNCTION
-    keyword whole rm SUPPORT_FUNCTION
-    keyword whole rmdir SUPPORT_FUNCTION
-    keyword whole sed SUPPORT_FUNCTION
-    keyword whole sh SUPPORT_FUNCTION
     keyword whole shopt SUPPORT_FUNCTION
-    keyword whole touch SUPPORT_FUNCTION
     keyword whole xmkmf SUPPORT_FUNCTION
 
 # some interesting files to copy
@@ -447,14 +397,6 @@ wholechars abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._
     keyword whole TODO CONSTANT_OTHER
     keyword whole VERSION CONSTANT_OTHER
 
-    keyword whole /dev/audio CONSTANT_OTHER
-    keyword whole /dev/dsp CONSTANT_OTHER
-    keyword whole /dev/null CONSTANT_OTHER
-    keyword whole /dev/mixed CONSTANT_OTHER
-    keyword whole /dev/stdin CONSTANT_OTHER
-    keyword whole /dev/stdout CONSTANT_OTHER
-    keyword whole /dev/stderr CONSTANT_OTHER
-    keyword whole /dev/zero CONSTANT_OTHER
 
 wholechars abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_
 
@@ -520,47 +462,10 @@ context exclusive ` ` STRING_QUOTED_OTHER black
 
 wholechars abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._
 
-    keyword whole break KEYWORD_CONTROL
-    keyword whole case KEYWORD_CONTROL
-    keyword whole clear SUPPORT_FUNCTION
-    keyword whole continue KEYWORD_CONTROL
-    keyword whole declare SUPPORT_FUNCTION
-    keyword whole done KEYWORD_CONTROL
-    keyword whole do KEYWORD_CONTROL
-    keyword whole elif KEYWORD_CONTROL
-    keyword whole else KEYWORD_CONTROL
-    keyword whole esac KEYWORD_CONTROL
-    keyword whole exit KEYWORD_CONTROL
-    keyword whole export SUPPORT_FUNCTION
-    keyword whole fi KEYWORD_CONTROL
-    keyword whole for KEYWORD_CONTROL
-    keyword whole getopts SUPPORT_FUNCTION
-    keyword whole if KEYWORD_CONTROL
-    keyword whole in KEYWORD_CONTROL
-    keyword whole read SUPPORT_FUNCTION
-    keyword whole return KEYWORD_CONTROL
-    keyword whole select KEYWORD_CONTROL
-    keyword whole shift SUPPORT_FUNCTION
-    keyword whole source SUPPORT_FUNCTION
-    keyword whole then KEYWORD_CONTROL
-    keyword whole trap SUPPORT_FUNCTION
-    keyword whole until KEYWORD_CONTROL
-    keyword whole unset SUPPORT_FUNCTION
-    keyword whole wait SUPPORT_FUNCTION
-    keyword whole while KEYWORD_CONTROL
+    include sh-words.syntax
 
 # here goes usable subset for .ebuild commands
-    keyword whole awk SUPPORT_FUNCTION
-    keyword whole sed SUPPORT_FUNCTION
 
-    keyword whole /dev/audio CONSTANT_OTHER
-    keyword whole /dev/dsp CONSTANT_OTHER
-    keyword whole /dev/null CONSTANT_OTHER
-    keyword whole /dev/mixed CONSTANT_OTHER
-    keyword whole /dev/stdin CONSTANT_OTHER
-    keyword whole /dev/stdout CONSTANT_OTHER
-    keyword whole /dev/stderr CONSTANT_OTHER
-    keyword whole /dev/zero CONSTANT_OTHER
 
 context inherit \n KEYWORD_CONTROL_IMPORT
     keyword whole inherit KEYWORD_CONTROL_IMPORT

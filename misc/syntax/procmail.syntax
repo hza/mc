@@ -220,6 +220,9 @@ context exclusive ` `        STRING_QUOTED_OTHER black
 
     keyword ES=$? VARIABLE_OTHER
 
+    # shell commands run by the backquoted action
+    include sh-words.syntax
+
 wholechars abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._
 
     keyword | KEYWORD_OPERATOR

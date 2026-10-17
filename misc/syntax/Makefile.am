@@ -90,6 +90,7 @@ SYNTAXFILES =			\
 	rust.syntax		\
 	turtle.syntax		\
 	sh.syntax		\
+	sh-words.syntax		\
 	slang.syntax		\
 	smalltalk.syntax	\
 	spec.syntax		\
