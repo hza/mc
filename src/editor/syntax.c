@@ -165,6 +165,12 @@ static const label_colors_t scheme_error_colors = {
 };
 static const GPtrArray *scheme_dialog_names = NULL;
 
+/* state of the syntax highlighting dialog */
+static WEdit *syntax_dialog_edit = NULL;
+static WListbox *syntax_dialog_list = NULL;
+static const GPtrArray *syntax_dialog_names = NULL;
+static gboolean syntax_dialog_previewed = FALSE;
+
 static char *error_file_name = NULL;
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1496,11 +1502,69 @@ pstrcmp (const void *p1, const void *p2)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* make syntax list entry @syntax current for @edit and reload its rules if they change */
+static void
+syntax_apply (WEdit *edit, const GPtrArray *names, int syntax)
+{
+    gboolean force_reload = FALSE;
+    char *current_syntax;
+    gboolean old_auto_syntax;
+
+    current_syntax = g_strdup (edit->syntax_type);
+    old_auto_syntax = auto_syntax;
+
+    switch (syntax)
+    {
+    case 0:  // auto syntax
+        auto_syntax = TRUE;
+        break;
+    case 1:  // reload current syntax
+        force_reload = TRUE;
+        break;
+    default:
+        auto_syntax = FALSE;
+        g_free (edit->syntax_type);
+        edit->syntax_type = g_strdup (g_ptr_array_index (names, syntax - N_DFLT_ENTRIES));
+    }
+
+    // Load or unload syntax rules if the option has changed
+    if (force_reload || (auto_syntax && !old_auto_syntax) || old_auto_syntax
+        || (current_syntax != NULL && edit->syntax_type != NULL
+            && strcmp (current_syntax, edit->syntax_type) != 0))
+        edit_load_syntax (edit, NULL, edit->syntax_type);
+
+    g_free (current_syntax);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* preview the syntax as the selection moves */
+static cb_ret_t
+syntax_dialog_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
+{
+    if (msg == MSG_NOTIFY && parm == 0 && sender != NULL && sender == WIDGET (syntax_dialog_list))
+    {
+        // reloading the syntax file on every move is pointless: leave it for Enter
+        if (syntax_dialog_list->current != 1)
+        {
+            syntax_apply (syntax_dialog_edit, syntax_dialog_names, syntax_dialog_list->current);
+            syntax_dialog_previewed = TRUE;
+            do_refresh ();
+        }
+        return MSG_HANDLED;
+    }
+
+    return dlg_default_callback (w, sender, msg, parm, data);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static int
-exec_edit_syntax_dialog (const GPtrArray *names, const char *current_syntax)
+exec_edit_syntax_dialog (WEdit *edit, const GPtrArray *names, const char *current_syntax)
 {
     size_t i;
     Listbox *syntaxlist;
+    int n;
 
     syntaxlist =
         listbox_window_new (LIST_LINES, MAX_ENTRY_LEN, _ ("Choose syntax highlighting"), NULL);
@@ -1517,7 +1581,19 @@ exec_edit_syntax_dialog (const GPtrArray *names, const char *current_syntax)
             listbox_set_current (syntaxlist->list, i + N_DFLT_ENTRIES);
     }
 
-    return listbox_run (syntaxlist);
+    syntax_dialog_edit = edit;
+    syntax_dialog_list = syntaxlist->list;
+    syntax_dialog_names = names;
+    syntax_dialog_previewed = FALSE;
+    WIDGET (syntaxlist->dlg)->callback = syntax_dialog_callback;
+
+    n = listbox_run (syntaxlist);
+
+    syntax_dialog_edit = NULL;
+    syntax_dialog_list = NULL;
+    syntax_dialog_names = NULL;
+
+    return n;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1714,6 +1790,8 @@ edit_syntax_dialog (WEdit *edit)
 {
     GPtrArray *names;
     int syntax;
+    char *saved_syntax;
+    gboolean saved_auto_syntax;
 
     names = g_ptr_array_new_with_free_func (g_free);
 
@@ -1723,39 +1801,23 @@ edit_syntax_dialog (WEdit *edit)
     edit_load_syntax (NULL, names, NULL);
     g_ptr_array_sort (names, pstrcmp);
 
-    syntax = exec_edit_syntax_dialog (names, edit->syntax_type);
+    saved_syntax = g_strdup (edit->syntax_type);
+    saved_auto_syntax = auto_syntax;
+
+    syntax = exec_edit_syntax_dialog (edit, names, edit->syntax_type);
     if (syntax >= 0)
+        syntax_apply (edit, names, syntax);
+    else if (syntax_dialog_previewed)
     {
-        gboolean force_reload = FALSE;
-        char *current_syntax;
-        gboolean old_auto_syntax;
-
-        current_syntax = g_strdup (edit->syntax_type);
-        old_auto_syntax = auto_syntax;
-
-        switch (syntax)
-        {
-        case 0:  // auto syntax
-            auto_syntax = TRUE;
-            break;
-        case 1:  // reload current syntax
-            force_reload = TRUE;
-            break;
-        default:
-            auto_syntax = FALSE;
-            g_free (edit->syntax_type);
-            edit->syntax_type = g_strdup (g_ptr_array_index (names, syntax - N_DFLT_ENTRIES));
-        }
-
-        // Load or unload syntax rules if the option has changed
-        if (force_reload || (auto_syntax && !old_auto_syntax) || old_auto_syntax
-            || (current_syntax != NULL && edit->syntax_type != NULL
-                && strcmp (current_syntax, edit->syntax_type) != 0))
-            edit_load_syntax (edit, NULL, edit->syntax_type);
-
-        g_free (current_syntax);
+        // cancelled: back to the original syntax
+        auto_syntax = saved_auto_syntax;
+        g_free (edit->syntax_type);
+        edit->syntax_type = saved_syntax;
+        saved_syntax = NULL;
+        edit_load_syntax (edit, NULL, edit->syntax_type);
     }
 
+    g_free (saved_syntax);
     g_ptr_array_free (names, TRUE);
 }
 
