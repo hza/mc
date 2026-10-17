@@ -16,7 +16,7 @@ Whitespace separates fields, so a literal space must be written as `\s`.
 
 ## Colour JSON keys and values differently
 
-mcedit has no lookahead, and contexts can't nest. However, keywords in `context default` take priority over a context that would start at the same spot. A wildcard keyword can therefore claim the `"key":` text before the string context starts:
+mcedit has no lookahead, and contexts can't nest (only a `nested` rule can switch back to the default rules, e.g. `${...}` in a template string; see `man mcedit`). However, keywords in `context default` take priority over a context that would start at the same spot. A wildcard keyword can therefore claim the `"key":` text before the string context starts:
 
 ```
 context default

@@ -125,6 +125,10 @@ typedef struct
     char *whole_word_chars_right;
     gboolean line_start;
     int color;
+    // "nested": the keyword opens a region highlighted with the default context until
+    // nest_close; nest_open (its last character) nests inside that region
+    unsigned char nest_open;
+    unsigned char nest_close;
 } syntax_keyword_t;
 
 typedef struct
@@ -429,6 +433,28 @@ apply_rules_going_right (WEdit *edit, off_t i)
 
     is_end = (edit->rule.end == i);
 
+    // the opening delimiter of a nested region ended: continue with the default context
+    // (in the default context itself this only tracks the region's end)
+    if (_rule.keyword != 0 && is_end && _rule.nest_closing == 0
+        && _rule.nest_len < EDIT_SYNTAX_NEST_MAX)
+    {
+        r = CONTEXT_RULE (g_ptr_array_index (edit->rules, _rule.context));
+        if (SYNTAX_KEYWORD (g_ptr_array_index (r->keyword, _rule.keyword))->nest_close != '\0')
+        {
+            _rule.nest_context[_rule.nest_len] = _rule.context;
+            _rule.nest_keyword[_rule.nest_len] = _rule.keyword;
+            _rule.nest_depth[_rule.nest_len] = 0;
+            _rule.nest_len++;
+            _rule.context = 0;
+            _rule._context = 0;
+            _rule.border = 0;
+            _rule.keyword = 0;
+        }
+    }
+
+    if (is_end)
+        _rule.nest_closing = 0;
+
     // check to turn off a keyword
     if (_rule.keyword != 0)
     {
@@ -473,6 +499,33 @@ apply_rules_going_right (WEdit *edit, off_t i)
             found_left = TRUE;
             _rule.border = 0;
         }
+    }
+
+    // inside a nested region: balance its brackets, return to the outer context at its end
+    if (_rule.nest_len != 0 && _rule.context == 0 && _rule.keyword == 0 && _rule.border == 0
+        && !found_right)
+    {
+        const int top = _rule.nest_len - 1;
+        const syntax_keyword_t *k;
+
+        r = CONTEXT_RULE (g_ptr_array_index (edit->rules, _rule.nest_context[top]));
+        k = SYNTAX_KEYWORD (g_ptr_array_index (r->keyword, _rule.nest_keyword[top]));
+
+        if (c == k->nest_close && _rule.nest_depth[top] == 0)
+        {
+            // the closing delimiter takes the color of the opening one
+            _rule.nest_len--;
+            _rule.context = _rule.nest_context[top];
+            _rule.keyword = _rule.nest_keyword[top];
+            _rule.nest_closing = 1;
+            _rule.end = i + 1;
+            edit->rule = _rule;
+            return;
+        }
+        if (c == k->nest_close)
+            _rule.nest_depth[top]--;
+        else if (c == k->nest_open && _rule.nest_depth[top] < 255)
+            _rule.nest_depth[top]++;
     }
 
     // check to turn on a keyword
@@ -1197,10 +1250,11 @@ edit_read_syntax_rules (WEdit *edit, FILE *f, char **args, int args_size)
             }
             c->spelling = TRUE;
         }
-        else if (strcmp (args[0], "keyword") == 0)
+        else if (strcmp (args[0], "keyword") == 0 || strcmp (args[0], "nested") == 0)
         {
             context_rule_t *last_rule;
             syntax_keyword_t *k;
+            const gboolean nested = (args[0][0] == 'n');
 
             if (no_words)
                 break_a;
@@ -1208,34 +1262,48 @@ edit_read_syntax_rules (WEdit *edit, FILE *f, char **args, int args_size)
             last_rule = CONTEXT_RULE (g_ptr_array_index (edit->rules, edit->rules->len - 1));
             k = g_new0 (syntax_keyword_t, 1);
             g_ptr_array_add (last_rule->keyword, k);
-            if (strcmp (*a, "whole") == 0)
+            if (!nested)
             {
-                a++;
-                k->whole_word_chars_left = g_strdup (whole_left);
-                k->whole_word_chars_right = g_strdup (whole_right);
+                if (strcmp (*a, "whole") == 0)
+                {
+                    a++;
+                    k->whole_word_chars_left = g_strdup (whole_left);
+                    k->whole_word_chars_right = g_strdup (whole_right);
+                }
+                else if (strcmp (*a, "wholeleft") == 0)
+                {
+                    a++;
+                    k->whole_word_chars_left = g_strdup (whole_left);
+                }
+                else if (strcmp (*a, "wholeright") == 0)
+                {
+                    a++;
+                    k->whole_word_chars_right = g_strdup (whole_right);
+                }
+                check_a;
+                if (strcmp (*a, "linestart") == 0)
+                {
+                    a++;
+                    k->line_start = TRUE;
+                }
+                check_a;
+                if (strcmp (*a, "whole") == 0)
+                    break_a;
             }
-            else if (strcmp (*a, "wholeleft") == 0)
-            {
-                a++;
-                k->whole_word_chars_left = g_strdup (whole_left);
-            }
-            else if (strcmp (*a, "wholeright") == 0)
-            {
-                a++;
-                k->whole_word_chars_right = g_strdup (whole_right);
-            }
-            check_a;
-            if (strcmp (*a, "linestart") == 0)
-            {
-                a++;
-                k->line_start = TRUE;
-            }
-            check_a;
-            if (strcmp (*a, "whole") == 0)
-                break_a;
 
             k->keyword = g_string_new (*a++);
             xx_lowerize_pattern (edit, k->keyword->str);
+            if (nested)
+            {
+                // a one-character closing delimiter
+                check_a;
+                if (k->keyword->len == 0 || strchr (k->keyword->str, '*') != NULL
+                    || strlen (*a) != 1)
+                    break_a;
+                k->nest_open = (unsigned char) k->keyword->str[k->keyword->len - 1];
+                k->nest_close = (unsigned char) **a;
+                a++;
+            }
             subst_defines (edit->defines, a, &args[ARGS_LEN]);
             color.fg = *a;
             if (*a != NULL)

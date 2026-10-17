@@ -30,6 +30,8 @@ struct edit_book_mark_t
     edit_book_mark_t *prev;
 };
 
+#define EDIT_SYNTAX_NEST_MAX 8
+
 typedef struct edit_syntax_rule_t edit_syntax_rule_t;
 struct edit_syntax_rule_t
 {
@@ -38,6 +40,14 @@ struct edit_syntax_rule_t
     unsigned short context;
     unsigned short _context;
     unsigned char border;
+    // "nested" regions entered so far: the context and its "nested" keyword to return to
+    unsigned char nest_len;
+    // the current keyword is the closing delimiter of a nested region
+    unsigned char nest_closing;
+    unsigned short nest_context[EDIT_SYNTAX_NEST_MAX];
+    unsigned short nest_keyword[EDIT_SYNTAX_NEST_MAX];
+    // unbalanced opening characters seen inside each nested region
+    unsigned char nest_depth[EDIT_SYNTAX_NEST_MAX];
 };
 
 /*
