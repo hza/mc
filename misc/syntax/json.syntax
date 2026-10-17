@@ -8,6 +8,10 @@
 context default
 
     #=========================
+    # Object keys
+    keyword "\[\s!#$%&'()\*\+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~\]"\[\s\t\]: ENTITY_NAME_TAG
+
+    #=========================
     # Constants
     keyword whole true CONSTANT_LANGUAGE
     keyword whole false CONSTANT_LANGUAGE

@@ -250,6 +250,12 @@ context exclusive // \n COMMENT_LINE
 
 
 #=============================
+# Regex literals (to end of line, so quotes inside don't open strings)
+
+context exclusive =\s/ \n STRING_REGEXP
+context exclusive (/ \n STRING_REGEXP
+
+#=============================
 # Strings
 
 context " " STRING_QUOTED_DOUBLE

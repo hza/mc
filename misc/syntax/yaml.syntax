@@ -15,7 +15,7 @@ context default
     keyword , INVALID_ILLEGAL
     # Below, we can get by with just "*:\{\s\n\}", but we prefer to restrict the
     # key names in order not to grab too much (e.g., "{one: 1, two: 2}", "one: 1  # possibilities: 1 or 2").
-    keyword \{0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz\}\[\s-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz\]:\{\s\n\} ENTITY_NAME_TAG
+    keyword \{0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz\}\[\s-./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz\]:\{\s\n\} ENTITY_NAME_TAG
     keyword [ PUNCTUATION_SECTION
     keyword ] PUNCTUATION_SECTION
     keyword { PUNCTUATION_SECTION
@@ -23,6 +23,19 @@ context default
     keyword whole true CONSTANT_LANGUAGE
     keyword whole false CONSTANT_LANGUAGE
     keyword whole null CONSTANT_LANGUAGE
+
+    #=========================
+    # Numbers
+    # Digits glued to other text (ports, paths, versions) are not numbers.
+    keyword \{:/.@\}\{0123456789\}\[0123456789\] base
+    keyword whole \[-\]\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \[-\]\{0123456789\}\[0123456789\]\.\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \[-\]\{0123456789\}\[0123456789\]\{eE\}\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \[-\]\{0123456789\}\[0123456789\]\{eE\}\{\-\+\}\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \[-\]\{0123456789\}\[0123456789\]\.\{0123456789\}\[0123456789\]\{eE\}\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword whole \[-\]\{0123456789\}\[0123456789\]\.\{0123456789\}\[0123456789\]\{eE\}\{\-\+\}\{0123456789\}\[0123456789\] CONSTANT_NUMERIC
+    keyword \{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz\}'\{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz\} base
+
 
 context " " STRING_QUOTED_DOUBLE
     spellcheck
@@ -36,6 +49,36 @@ context ' ' STRING_QUOTED_SINGLE
     spellcheck
     keyword {{*}} META_PREPROCESSOR
 
-# The last word below may be: "\n*:\{\s\n\}", but used strict version suitable for more cases
-context exclusive |\[123456789\+\-\s\t\]\n \n\n\[\s-\]\[-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz\]:\{\s\n\} STRING_UNQUOTED
-context exclusive >\[123456789\+\-\s\t\]\n \n\n\[\s-\]\[-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz\]:\{\s\n\} STRING_UNQUOTED
+# Indentation-aware block scalars: "<indent>key: |" ends at the next line
+# with exactly the same indentation (a key, list item or {{ template }}).
+# The key line itself is the start delimiter, so it loses the key colour.
+# "<indent>- |" ends at the next line indented 2 less (the parent key's level).
+context exclusive linestart \s\s\s\s\s\s\s\s\s\s\s\s\{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\}*:\s\[\s\]|\[123456789\+\-\s\t\]\n \n\s\s\s\s\s\s\s\s\s\s\s\s\{-{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\} STRING_UNQUOTED
+context exclusive linestart \s\s\s\s\s\s\s\s\s\s\s\s\{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\}*:\s\[\s\]>\[123456789\+\-\s\t\]\n \n\s\s\s\s\s\s\s\s\s\s\s\s\{-{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\} STRING_UNQUOTED
+context exclusive linestart \s\s\s\s\s\s\s\s\s\s\s\s-\s\[\s\]|\[123456789\+\-\s\t\]\n \n\s\s\s\s\s\s\s\s\s\s\{-{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\} STRING_UNQUOTED
+context exclusive linestart \s\s\s\s\s\s\s\s\s\s\s\s-\s\[\s\]>\[123456789\+\-\s\t\]\n \n\s\s\s\s\s\s\s\s\s\s\{-{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\} STRING_UNQUOTED
+context exclusive linestart \s\s\s\s\s\s\s\s\s\s\{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\}*:\s\[\s\]|\[123456789\+\-\s\t\]\n \n\s\s\s\s\s\s\s\s\s\s\{-{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\} STRING_UNQUOTED
+context exclusive linestart \s\s\s\s\s\s\s\s\s\s\{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\}*:\s\[\s\]>\[123456789\+\-\s\t\]\n \n\s\s\s\s\s\s\s\s\s\s\{-{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\} STRING_UNQUOTED
+context exclusive linestart \s\s\s\s\s\s\s\s\s\s-\s\[\s\]|\[123456789\+\-\s\t\]\n \n\s\s\s\s\s\s\s\s\{-{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\} STRING_UNQUOTED
+context exclusive linestart \s\s\s\s\s\s\s\s\s\s-\s\[\s\]>\[123456789\+\-\s\t\]\n \n\s\s\s\s\s\s\s\s\{-{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\} STRING_UNQUOTED
+context exclusive linestart \s\s\s\s\s\s\s\s\{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\}*:\s\[\s\]|\[123456789\+\-\s\t\]\n \n\s\s\s\s\s\s\s\s\{-{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\} STRING_UNQUOTED
+context exclusive linestart \s\s\s\s\s\s\s\s\{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\}*:\s\[\s\]>\[123456789\+\-\s\t\]\n \n\s\s\s\s\s\s\s\s\{-{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\} STRING_UNQUOTED
+context exclusive linestart \s\s\s\s\s\s\s\s-\s\[\s\]|\[123456789\+\-\s\t\]\n \n\s\s\s\s\s\s\{-{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\} STRING_UNQUOTED
+context exclusive linestart \s\s\s\s\s\s\s\s-\s\[\s\]>\[123456789\+\-\s\t\]\n \n\s\s\s\s\s\s\{-{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\} STRING_UNQUOTED
+context exclusive linestart \s\s\s\s\s\s\{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\}*:\s\[\s\]|\[123456789\+\-\s\t\]\n \n\s\s\s\s\s\s\{-{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\} STRING_UNQUOTED
+context exclusive linestart \s\s\s\s\s\s\{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\}*:\s\[\s\]>\[123456789\+\-\s\t\]\n \n\s\s\s\s\s\s\{-{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\} STRING_UNQUOTED
+context exclusive linestart \s\s\s\s\s\s-\s\[\s\]|\[123456789\+\-\s\t\]\n \n\s\s\s\s\{-{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\} STRING_UNQUOTED
+context exclusive linestart \s\s\s\s\s\s-\s\[\s\]>\[123456789\+\-\s\t\]\n \n\s\s\s\s\{-{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\} STRING_UNQUOTED
+context exclusive linestart \s\s\s\s\{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\}*:\s\[\s\]|\[123456789\+\-\s\t\]\n \n\s\s\s\s\{-{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\} STRING_UNQUOTED
+context exclusive linestart \s\s\s\s\{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\}*:\s\[\s\]>\[123456789\+\-\s\t\]\n \n\s\s\s\s\{-{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\} STRING_UNQUOTED
+context exclusive linestart \s\s\s\s-\s\[\s\]|\[123456789\+\-\s\t\]\n \n\s\s\{-{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\} STRING_UNQUOTED
+context exclusive linestart \s\s\s\s-\s\[\s\]>\[123456789\+\-\s\t\]\n \n\s\s\{-{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\} STRING_UNQUOTED
+context exclusive linestart \s\s\{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\}*:\s\[\s\]|\[123456789\+\-\s\t\]\n \n\s\s\{-{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\} STRING_UNQUOTED
+context exclusive linestart \s\s\{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\}*:\s\[\s\]>\[123456789\+\-\s\t\]\n \n\s\s\{-{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\} STRING_UNQUOTED
+context exclusive linestart \s\s-\s\[\s\]|\[123456789\+\-\s\t\]\n \n\{-{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\} STRING_UNQUOTED
+context exclusive linestart \s\s-\s\[\s\]>\[123456789\+\-\s\t\]\n \n\{-{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\} STRING_UNQUOTED
+
+# Fallback: other block scalars run until a line that starts at column 0.
+# The end delimiter consumes that first character, so it loses its colour.
+context exclusive |\[123456789\+\-\s\t\]\n \n\{-{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\} STRING_UNQUOTED
+context exclusive >\[123456789\+\-\s\t\]\n \n\{-{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"'\} STRING_UNQUOTED

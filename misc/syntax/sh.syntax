@@ -13,7 +13,9 @@ context default
     keyword \\` CONSTANT_CHARACTER_ESCAPE
     keyword ` PUNCTUATION_SECTION
     keyword ; PUNCTUATION_TERMINATOR
+    keyword $(*"$(*)"*) VARIABLE_OTHER
     keyword $(*) VARIABLE_OTHER
+    keyword ${*"${*}"*} VARIABLE_OTHER
     keyword ${*} VARIABLE_OTHER
     keyword { PUNCTUATION_SECTION
     keyword } PUNCTUATION_SECTION
@@ -1092,18 +1094,10 @@ wholechars abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_
 context # \n COMMENT_LINE
     spellcheck
 
-context ' ' STRING_QUOTED_SINGLE
+context exclusive whole <<\[\s\]\[-\]\[\s\]\[\\\]EOF EOF STRING_QUOTED_OTHER
+context exclusive whole <<\[\s\]\[-\]\[\s\]\[\\\]END END STRING_QUOTED_OTHER
 
-# Basic support for heredocs with suppressed variable expansion: 'exclusive' keyword breaks the matching due
-# to a conflict with the rules for quotes, so remove it in all cases, including `\`, for consistency.
-wholechars abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'"\\
-context whole <<\[\s\]\[-\]\[\s\]\\EOF EOF STRING_QUOTED_OTHER
-context whole <<\[\s\]\[-\]\[\s\]\\END END STRING_QUOTED_OTHER
-context whole <<\[\s\]\[-\]\[\s\]'EOF' EOF STRING_QUOTED_OTHER
-context whole <<\[\s\]\[-\]\[\s\]'END' END STRING_QUOTED_OTHER
-context whole <<\[\s\]\[-\]\[\s\]"EOF" EOF STRING_QUOTED_OTHER
-context whole <<\[\s\]\[-\]\[\s\]"END" END STRING_QUOTED_OTHER
-wholechars abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_
+context ' ' STRING_QUOTED_SINGLE
 
 context " " STRING_QUOTED_DOUBLE
     keyword \\* CONSTANT_CHARACTER_ESCAPE
@@ -1112,54 +1106,11 @@ context " " STRING_QUOTED_DOUBLE
     keyword \\\\ CONSTANT_CHARACTER_ESCAPE
     keyword \\` CONSTANT_CHARACTER_ESCAPE
     keyword \\" CONSTANT_CHARACTER_ESCAPE
+    # $ inside $
+    keyword $(*"$(*)"*) VARIABLE_OTHER
     keyword $(*) VARIABLE_OTHER
-    keyword ${*} VARIABLE_OTHER
-    keyword $\* VARIABLE_OTHER
-    keyword $@ VARIABLE_OTHER
-    keyword $# VARIABLE_OTHER
-    keyword $? VARIABLE_OTHER
-    keyword $- VARIABLE_OTHER
-    keyword $$ VARIABLE_OTHER
-    keyword $! VARIABLE_OTHER
-    keyword $_ VARIABLE_OTHER
-    keyword wholeright $\[0123456789\] VARIABLE_OTHER
-
-    keyword wholeright $+ VARIABLE_OTHER
-
-    keyword $ VARIABLE_OTHER
-
-# Basic support for heredocs with variable expansion
-context exclusive whole <<\[\s\]\[-\]\[\s\]EOF EOF STRING_QUOTED_OTHER
-    keyword \\* CONSTANT_CHARACTER_ESCAPE
-    keyword \\@ CONSTANT_CHARACTER_ESCAPE
-    keyword \\$ CONSTANT_CHARACTER_ESCAPE
-    keyword \\\\ CONSTANT_CHARACTER_ESCAPE
-    keyword \\` CONSTANT_CHARACTER_ESCAPE
-    keyword \\" CONSTANT_CHARACTER_ESCAPE
-    keyword $(*) VARIABLE_OTHER
-    keyword ${*} VARIABLE_OTHER
-    keyword $\* VARIABLE_OTHER
-    keyword $@ VARIABLE_OTHER
-    keyword $# VARIABLE_OTHER
-    keyword $? VARIABLE_OTHER
-    keyword $- VARIABLE_OTHER
-    keyword $$ VARIABLE_OTHER
-    keyword $! VARIABLE_OTHER
-    keyword $_ VARIABLE_OTHER
-    keyword wholeright $\[0123456789\] VARIABLE_OTHER
-
-    keyword wholeright $+ VARIABLE_OTHER
-
-    keyword $ VARIABLE_OTHER
-
-context exclusive whole <<\[\s\]\[-\]\[\s\]END END STRING_QUOTED_OTHER
-    keyword \\* CONSTANT_CHARACTER_ESCAPE
-    keyword \\@ CONSTANT_CHARACTER_ESCAPE
-    keyword \\$ CONSTANT_CHARACTER_ESCAPE
-    keyword \\\\ CONSTANT_CHARACTER_ESCAPE
-    keyword \\` CONSTANT_CHARACTER_ESCAPE
-    keyword \\" CONSTANT_CHARACTER_ESCAPE
-    keyword $(*) VARIABLE_OTHER
+    # $ inside $
+    keyword ${*"${*}"*} VARIABLE_OTHER
     keyword ${*} VARIABLE_OTHER
     keyword $\* VARIABLE_OTHER
     keyword $@ VARIABLE_OTHER
@@ -1180,7 +1131,11 @@ context exclusive ` ` STRING_QUOTED_OTHER black
     keyword " STRING_QUOTED_DOUBLE
     keyword \\` CONSTANT_CHARACTER_ESCAPE
     keyword ; PUNCTUATION_TERMINATOR
+    # fix $ inside $
+    keyword $(*"$(*)"*) VARIABLE_OTHER
     keyword $(*) VARIABLE_OTHER
+    # fix $ inside $
+    keyword ${*"${*}"*} VARIABLE_OTHER
     keyword ${*} VARIABLE_OTHER
     keyword { PUNCTUATION_SECTION
     keyword } PUNCTUATION_SECTION

@@ -35,6 +35,7 @@ SYNTAXFILES =			\
 	dot.syntax		\
 	ebuild.syntax		\
 	eiffel.syntax		\
+	env.syntax		\
 	erlang.syntax		\
 	f90.syntax		\
 	filehighlight.syntax	\

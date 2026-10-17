@@ -42,6 +42,9 @@ include syntax.syntax
 file filehighlight\\.ini$ File\sHighlighting\sdefinitions ^#\sfile\shighlight\srules\sversion\s
 include filehighlight.syntax
 
+file .\*\\.env(\\.[A-Za-z0-9_-]\*)?$ Dotenv\sFile
+include env.syntax
+
 file ..\*\\.e$ Eiffel\sSource\sFile
 include eiffel.syntax
 

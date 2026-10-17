@@ -24,8 +24,17 @@ context default
     keyword whole linestart .\[\s\t\]undef KEYWORD_OTHER
 
     keyword linestart \t default red
+# targets
+    keyword linestart \{abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-/%\}\[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-/%\]: ENTITY_NAME_FUNCTION
+# variables set with ?=
+    keyword linestart \{abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_\}\[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_\]\[\s\]? VARIABLE_OTHER
+# variables set with :=
+    keyword linestart \{abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_\}\[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_\]\[\s\]:= VARIABLE_OTHER
+# variables set with =
+    keyword linestart \{abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_\}\[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_\]\[\s\]= VARIABLE_OTHER
     keyword whole .PHONY KEYWORD_OTHER
     keyword whole .SUFFIXES KEYWORD_OTHER
+    keyword whole .DEFAULT_GOAL KEYWORD_OTHER
     keyword whole .DEFAULT KEYWORD_OTHER
     keyword whole .PRECIOUS KEYWORD_OTHER
     keyword whole .INTERMEDIATE KEYWORD_OTHER
@@ -52,6 +61,7 @@ context linestart # \n COMMENT_LINE
 
 # right part of an assignment
 context exclusive = \n STRING_UNQUOTED
+    keyword "*" STRING_QUOTED_DOUBLE
     keyword \\\n PUNCTUATION_SEPARATOR_CONTINUATION
     keyword $$ CONSTANT_CHARACTER_ESCAPE
     keyword $(*) VARIABLE_OTHER
@@ -60,12 +70,15 @@ context exclusive = \n STRING_UNQUOTED
     keyword whole @+@ VARIABLE_OTHER black
     keyword @+@ VARIABLE_OTHER black
 
-# shell code
-context exclusive linestart \t \n
-    keyword \\\n PUNCTUATION_SEPARATOR_CONTINUATION
+#=============================
+# Strings (recipe lines stay in the default context so these can start there, as in sh.syntax)
+context ' ' STRING_QUOTED_SINGLE
+
+context " " STRING_QUOTED_DOUBLE
+    keyword \\\\ CONSTANT_CHARACTER_ESCAPE
+    keyword \\" CONSTANT_CHARACTER_ESCAPE
+    keyword \\$ CONSTANT_CHARACTER_ESCAPE
+    keyword \\` CONSTANT_CHARACTER_ESCAPE
     keyword $$ CONSTANT_CHARACTER_ESCAPE
     keyword $(*) VARIABLE_OTHER
     keyword ${*} VARIABLE_OTHER
-    keyword linestart \t default red
-    keyword whole @+@ VARIABLE_OTHER black
-    keyword @+@ VARIABLE_OTHER black
