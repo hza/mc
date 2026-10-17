@@ -712,6 +712,14 @@ edit_draw_this_line (WEdit *edit, off_t b, long row, long start_col, long end_co
                     else
                         c = convert_to_display_c (c);
 
+                    // the CR of a CRLF line end is drawn blank instead of ^M
+                    if (edit_buffer_is_crlf (&edit->buffer, q))
+                    {
+                        p->ch = ' ';
+                        p++;
+                        col++;
+                        break;
+                    }
                     // Caret notation for control characters
                     if (c < 32)
                     {

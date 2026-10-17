@@ -80,6 +80,16 @@ edit_buffer_get_previous_byte (const edit_buffer_t *buf)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+/** TRUE if @byte_index is the CR of a CR LF line end */
+
+static inline gboolean
+edit_buffer_is_crlf (const edit_buffer_t *buf, off_t byte_index)
+{
+    return byte_index + 1 < buf->size && edit_buffer_get_byte (buf, byte_index) == '\r'
+        && edit_buffer_get_byte (buf, byte_index + 1) == '\n';
+}
+
+/* --------------------------------------------------------------------------------------------- */
 /**
  * Get "begin-of-line" offset of current line
  *

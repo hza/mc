@@ -876,6 +876,37 @@ edit_cursor_to_bol (WEdit *edit)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+/**
+ * Keep the cursor off the position between the CR and the LF of a CRLF line end, where
+ * typed text would split them: go past the LF after a step right from the CR, else before
+ * the CR.
+ */
+
+static void
+edit_cursor_off_crlf (WEdit *edit, off_t before)
+{
+    if (edit_buffer_is_crlf (&edit->buffer, edit->buffer.curs1 - 1))
+        edit_cursor_move (edit, edit->buffer.curs1 == before + 1 ? 1 : -1);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/** break the line, keeping a CRLF line end when the current (or, at the end, previous) line has one */
+
+static void
+edit_insert_newline (WEdit *edit)
+{
+    off_t eol;
+
+    eol = edit_buffer_get_current_eol (&edit->buffer);
+    // the last line has no line end yet: follow the one before it
+    if (eol == edit->buffer.size)
+        eol = edit_buffer_get_current_bol (&edit->buffer) - 1;
+    if (edit_buffer_is_crlf (&edit->buffer, eol - 1))
+        edit_insert (edit, '\r');
+    edit_insert (edit, '\n');
+}
+
+/* --------------------------------------------------------------------------------------------- */
 /** goto end of line */
 
 static void
@@ -884,6 +915,9 @@ edit_cursor_to_eol (WEdit *edit)
     off_t b;
 
     b = edit_buffer_get_current_eol (&edit->buffer);
+    // stop before the CR of a CRLF line end, which is drawn blank
+    if (edit_buffer_is_crlf (&edit->buffer, b - 1))
+        b--;
     edit_cursor_move (edit, b - edit->buffer.curs1);
     edit->search_start = edit->buffer.curs1;
     edit->prev_col = edit_get_col (edit);
@@ -2858,6 +2892,12 @@ edit_move_forward3 (const WEdit *edit, off_t current, long cols, off_t upto)
 
         if (c == '\n')
             return (upto != 0 ? (off_t) col : p);
+        // the CR of a CRLF line end takes one blank column instead of ^M
+        if (edit_buffer_is_crlf (&edit->buffer, p))
+        {
+            col++;
+            continue;
+        }
         if (c == '\t')
             col += TAB_SIZE - col % TAB_SIZE;
         else if ((c < 32 || c == 127) && (orig_c == c || (!mc_global.utf8_display && !edit->utf8)))
@@ -3373,6 +3413,7 @@ void
 edit_execute_cmd (WEdit *edit, long command, int char_for_insertion)
 {
     WRect *w = &WIDGET (edit)->rect;
+    off_t before;
 
     if (command == CK_WindowFullscreen)
     {
@@ -3385,6 +3426,10 @@ edit_execute_cmd (WEdit *edit, long command, int char_for_insertion)
         return;
 
     edit->force |= REDRAW_LINE;
+
+    // e.g. a mouse click past the end of a CRLF line
+    edit_cursor_off_crlf (edit, edit->buffer.curs1);
+    before = edit->buffer.curs1;
 
     /* The next key press will unhighlight the found string, so update
      * the whole page */
@@ -3601,7 +3646,12 @@ edit_execute_cmd (WEdit *edit, long command, int char_for_insertion)
                 edit_backspace (edit, TRUE);
         }
         else
+        {
+            // a CRLF line end is removed as a whole
+            if (edit_buffer_is_crlf (&edit->buffer, edit->buffer.curs1 - 2))
+                edit_backspace (edit, TRUE);
             edit_backspace (edit, FALSE);
+        }
         break;
     case CK_Delete:
         // if non persistent selection and text selected
@@ -3621,7 +3671,12 @@ edit_execute_cmd (WEdit *edit, long command, int char_for_insertion)
                     edit_delete (edit, TRUE);
             }
             else
+            {
+                // a CRLF line end is removed as a whole
+                if (edit_buffer_is_crlf (&edit->buffer, edit->buffer.curs1))
+                    edit_delete (edit, TRUE);
                 edit_delete (edit, FALSE);
+            }
         }
         break;
     case CK_DeleteToWordBegin:
@@ -3654,13 +3709,13 @@ edit_execute_cmd (WEdit *edit, long command, int char_for_insertion)
         }
         else
         {
-            edit_insert (edit, '\n');
+            edit_insert_newline (edit);
             if (edit_options.return_does_auto_indent && !bracketed_pasting_in_progress)
                 edit_auto_indent (edit);
         }
         break;
     case CK_Return:
-        edit_insert (edit, '\n');
+        edit_insert_newline (edit);
         break;
 
     case CK_MarkColumnPageUp:
@@ -4063,6 +4118,8 @@ edit_execute_cmd (WEdit *edit, long command, int char_for_insertion)
         edit_block_process_cmd (edit, command - CK_PipeBlock (0));
 
     // keys which must set the col position, and the search vars
+    edit_cursor_off_crlf (edit, before);
+
     switch (command)
     {
     case CK_Search:
