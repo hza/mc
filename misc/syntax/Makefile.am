@@ -121,15 +121,22 @@ SCHEMEFILES =						\
 	schemes/ayu-light.sublime-color-scheme			\
 	schemes/ayu-mirage.sublime-color-scheme			\
 	schemes/catppuccin-frappe.sublime-color-scheme		\
-	schemes/catppuccin-latte.sublime-color-scheme		\
 	schemes/catppuccin-macchiato.sublime-color-scheme	\
 	schemes/catppuccin-mocha.sublime-color-scheme		\
-	schemes/dracula.sublime-color-scheme			\
+	schemes/dracula-soft.json				\
+	schemes/dracula.json					\
 	schemes/gruvbox.sublime-color-scheme			\
+	schemes/night-owl-light-noitalic.json			\
+	schemes/night-owl-light.json				\
+	schemes/night-owl-noitalic.json				\
+	schemes/night-owl.json					\
 	schemes/nord.sublime-color-scheme			\
 	schemes/rose-pine.sublime-color-scheme			\
 	schemes/solarized-dark.sublime-color-scheme		\
-	schemes/solarized-light.sublime-color-scheme
+	schemes/solarized-light.sublime-color-scheme		\
+	schemes/tokyo-night-light.json				\
+	schemes/tokyo-night-storm.json				\
+	schemes/tokyo-night.json
 
 if USE_INTERNAL_EDIT
 syntaxdir =		$(pkgdatadir)/syntax

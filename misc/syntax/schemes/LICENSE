@@ -1,24 +1,29 @@
 Color schemes for scope tokens in mcedit syntax files
 
-These .sublime-color-scheme files come from third-party projects. Each is
-distributed under the MIT license; the copyright notices and the license
-text are reproduced below as that license requires.
+These .sublime-color-scheme files and VS Code .json themes come from
+third-party projects. Each is distributed under the MIT license; the
+copyright notices and the license text are reproduced below as that license
+requires.
 
   ayu-dark, ayu-light, ayu-mirage
       https://github.com/dempfi/ayu
       Copyright (c) 2016 Ike Kurghinyan (Ike Ku)
 
-  catppuccin-frappe, catppuccin-latte, catppuccin-macchiato, catppuccin-mocha
+  catppuccin-frappe, catppuccin-macchiato, catppuccin-mocha
       https://github.com/catppuccin/sublime-text
       Copyright (c) 2021 Catppuccin
 
-  dracula
-      https://github.com/dracula/sublime (palette: https://draculatheme.com)
-      Copyright (c) 2013-present Dracula Theme
+  dracula, dracula-soft
+      https://github.com/dracula/visual-studio-code
+      Copyright (c) 2016 Dracula Theme
 
   gruvbox
       https://github.com/Briles/gruvbox
       Copyright (c) 2016 Brian Reilly
+
+  night-owl, night-owl-noitalic, night-owl-light, night-owl-light-noitalic
+      https://github.com/sdras/night-owl-vscode-theme
+      Copyright (c) 2018 Sarah Drasner
 
   nord
       https://github.com/nordtheme/sublime-text
@@ -31,6 +36,10 @@ text are reproduced below as that license requires.
   solarized-dark, solarized-light
       https://github.com/braver/Solarized
       Copyright (c) 2016 Koen Lageveen
+
+  tokyo-night, tokyo-night-storm, tokyo-night-light
+      https://github.com/enkia/tokyo-night-vscode-theme
+      Copyright (c) 2018-present Enkia
 
 -------------------------------------------------------------------------------
 

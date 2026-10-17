@@ -80,9 +80,11 @@ NAME.json.  It is looked up in
 If both NAME.sublime-color-scheme and NAME.json exist, the Sublime scheme is
 used.
 
-mc ships ayu-dark, ayu-light, ayu-mirage, catppuccin-frappe, catppuccin-latte,
-catppuccin-macchiato, catppuccin-mocha, dracula, gruvbox, nord, rose-pine,
-solarized-dark and solarized-light.  Their licenses are in schemes/LICENSE.
+mc ships ayu-dark, ayu-light, ayu-mirage, catppuccin-frappe,
+catppuccin-macchiato, catppuccin-mocha, dracula, dracula-soft, gruvbox,
+night-owl, night-owl-noitalic, night-owl-light, night-owl-light-noitalic, nord,
+rose-pine, solarized-dark, solarized-light, tokyo-night, tokyo-night-storm and
+tokyo-night-light.  Their licenses are in schemes/LICENSE.
 
 
 Token reference
