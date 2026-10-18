@@ -557,6 +557,7 @@ static const global_keymap_ini_t default_viewer_keymap[] = {
     { "SelectCodepage", "alt-e" },
     { "Shell", "ctrl-o" },
     { "Ruler", "alt-r" },
+    { "SyntaxOnOff", "alt-s" },
     { "SearchForward", "slash" },
     { "SearchBackward", "question" },
     { "SearchForwardContinue", "ctrl-s" },

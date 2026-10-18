@@ -15,6 +15,7 @@
 
 #include "src/keymap.h"           // global_keymap_t
 #include "src/filemanager/dir.h"  // dir_list
+#include "src/syntax/syntax.h"       // syntax_t
 
 #include "mcviewer.h"
 
@@ -126,6 +127,10 @@ struct WView
     gboolean growbuf_finished;    // TRUE when all data has been read.
 
     mcview_mode_flags_t mode_flags;
+
+    // syntax highlighting
+    syntax_t syntax;         // no rules when off or not found
+    gboolean syntax_loaded;  // the rules were looked for since the text or the mode changed
 
     // Hex editor modes
     gboolean hexedit_mode;  // Hexview or Hexedit
@@ -322,6 +327,12 @@ void mcview_nroff_seq_free (mcview_nroff_t **nroff);
 nroff_type_t mcview_nroff_seq_info (mcview_nroff_t *nroff);
 int mcview_nroff_seq_next (mcview_nroff_t *nroff);
 int mcview_nroff_seq_prev (mcview_nroff_t *nroff);
+
+/* syntax.c: */
+void mcview_syntax_load (WView *view);
+void mcview_syntax_unload (WView *view);
+int mcview_syntax_color (WView *view, off_t offset);
+void mcview_toggle_syntax_mode (WView *view);
 
 /* search.c: */
 gboolean mcview_search_init (WView *view);

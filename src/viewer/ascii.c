@@ -591,6 +591,10 @@ mcview_display_line (WView *view, mcview_state_machine_t *state, int row, gboole
             return (col > 0) ? 1 : 0;
         }
 
+        // only what is shown: the rules walk every byte up to the one they color
+        if (color == VIEWER_NORMAL_COLOR && row >= 0 && row < r->lines)
+            color = mcview_syntax_color (view, state_saved.offset);
+
         if (view->search_start <= state->offset && state->offset < view->search_end)
             color = VIEWER_SELECTED_COLOR;
 
@@ -827,6 +831,9 @@ mcview_display_text (WView *view)
     int row;
     mcview_state_machine_t state;
     gboolean again;
+
+    if (!view->syntax_loaded)
+        mcview_syntax_load (view);
 
     do
     {

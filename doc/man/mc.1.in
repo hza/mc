@@ -3040,6 +3040,11 @@ Jump to the previous file.
 .B Alt\-r
 Toggle the ruler.
 .TP
+.B Alt\-s
+Toggle syntax highlighting.  The viewer colors text with the rules of the
+internal editor.  In a file larger than a megabyte, a comment or string that
+began more than a megabyte before the shown text may be colored wrong.
+.TP
 .B Alt\-e
 to change charset of displayed text may use Alt\-e (M\-e).
 Recoding is made from selected codepage into system codepage. To
@@ -3693,6 +3698,10 @@ and that is the default value.
 .I mouse_move_pages_viewer
 Controls if scrolling with the mouse is done by pages or line by line
 on the internal file viewer.
+.TP
+.I mcview_syntax_highlighting
+Color the text in the internal file viewer with the syntax rules of the
+internal editor.  On by default; Alt\-s in the viewer toggles it.
 .TP
 .I only_leading_plus_minus
 Allow special treatment for '+', '\-', '*' in the command line (select,

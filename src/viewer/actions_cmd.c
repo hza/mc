@@ -466,6 +466,9 @@ mcview_execute_cmd (WView *view, long command)
     case CK_NroffMode:
         mcview_toggle_nroff_mode (view);
         break;
+    case CK_SyntaxOnOff:
+        mcview_toggle_syntax_mode (view);
+        break;
     case CK_Home:
         mcview_moveto_bol (view);
         break;

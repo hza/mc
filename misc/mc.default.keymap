@@ -427,6 +427,7 @@ FilePrev = ctrl-b
 SelectCodepage = alt-e
 Shell = ctrl-o
 Ruler = alt-r
+SyntaxOnOff = alt-s
 History = alt-shift-e
 
 [viewer:hex]

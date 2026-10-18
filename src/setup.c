@@ -361,6 +361,7 @@ static const struct
     { "nice_rotating_dash", &nice_rotating_dash },
     { "shadows", &mc_global.tty.shadows },
     { "mcview_remember_file_position", &mcview_remember_file_position },
+    { "mcview_syntax_highlighting", &mcview_syntax_highlighting },
     { "auto_fill_mkdir_name", &auto_fill_mkdir_name },
     { "copymove_persistent_attr", &copymove_persistent_attr },
 #ifdef ENABLE_EXT2FS_ATTR

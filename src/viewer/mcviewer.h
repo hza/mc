@@ -35,6 +35,7 @@ extern int mcview_max_dirt_limit;
 
 extern gboolean mcview_mouse_move_pages;
 extern char *mcview_show_eof;
+extern gboolean mcview_syntax_highlighting;
 
 /*** declarations of public functions ************************************************************/
 

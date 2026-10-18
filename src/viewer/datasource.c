@@ -361,6 +361,7 @@ mcview_close_datasource (WView *view)
         break;
     }
     view->datasource = DS_NONE;
+    mcview_syntax_unload (view);
 }
 
 /* --------------------------------------------------------------------------------------------- */

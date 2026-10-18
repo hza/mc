@@ -112,6 +112,7 @@ mcview_toggle_nroff_mode (WView *view)
 {
     view->mode_flags.nroff = !view->mode_flags.nroff;
     mcview_altered_flags.nroff = TRUE;
+    mcview_syntax_unload (view);  // highlighting steps aside for nroff and comes back after
     view->dpy_wrap_dirty = TRUE;
     view->dpy_bbar_dirty = TRUE;
     view->dirty++;
@@ -154,6 +155,9 @@ mcview_init (WView *view)
     view->workdir_vpath = NULL;
     view->command = NULL;
     view->search_nroff_seq = NULL;
+
+    memset (&view->syntax, 0, sizeof (view->syntax));
+    view->syntax_loaded = FALSE;
 
     mcview_set_datasource_none (view);
 
