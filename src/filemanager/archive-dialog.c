@@ -307,7 +307,7 @@ archive_dialog_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, 
             return MSG_HANDLED;
         }
 #ifdef ENABLE_BACKGROUND
-        if (parm == KEY_F (9))
+        if (parm == KEY_F (2))
         {
             h->ret_value = B_ARCHIVE_BG;
             dlg_close (h);
@@ -526,7 +526,7 @@ archive_dialog (int cols)
     buttons[n++] = button_new (lines - 3, 0, B_ENTER, DEFPUSH_BUTTON, _ ("&OK"), NULL);
 #ifdef ENABLE_BACKGROUND
     buttons[n++] =
-        button_new (lines - 3, 0, B_ARCHIVE_BG, NORMAL_BUTTON, _ ("&Background (F9)"), NULL);
+        button_new (lines - 3, 0, B_ARCHIVE_BG, NORMAL_BUTTON, _ ("&Background (F2)"), NULL);
 #endif
     buttons[n++] = button_new (lines - 3, 0, B_USER, NORMAL_BUTTON, _ ("Co&py (F5)"), NULL);
     buttons[n++] = button_new (lines - 3, 0, B_CANCEL, NORMAL_BUTTON, _ ("&Cancel"), NULL);

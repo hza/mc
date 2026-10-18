@@ -249,7 +249,7 @@ static struct
     { NULL, FILE_SUSPEND, N_ ("S&uspend"), NORMAL_BUTTON, -1 },
     { NULL, FILE_SUSPEND, N_ ("Con&tinue"), NORMAL_BUTTON, -1 },
     { NULL, FILE_ABORT, N_ ("&Abort"), NORMAL_BUTTON, -1 },
-    { NULL, FILE_BACKGROUND, N_ ("&Background (F9)"), NORMAL_BUTTON, -1 },
+    { NULL, FILE_BACKGROUND, N_ ("&Background (F2)"), NORMAL_BUTTON, -1 },
 };
 
 /* --------------------------------------------------------------------------------------------- */
@@ -404,8 +404,8 @@ file_ui_op_dlg_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, 
 
 #ifdef ENABLE_BACKGROUND
     case MSG_UNHANDLED_KEY:
-        // F9 is the Background button
-        if (parm == KEY_F (9) && progress_buttons[4].w != NULL)
+        // F2 is the Background button
+        if (parm == KEY_F (2) && progress_buttons[4].w != NULL)
         {
             DIALOG (w)->ret_value = FILE_BACKGROUND;  // for file_progress_check_buttons()
             return MSG_HANDLED;
@@ -821,7 +821,7 @@ progress_button_callback (MC_UNUSED WButton *button, MC_UNUSED int action)
 }
 
 /* --------------------------------------------------------------------------------------------- */
-/** F5 in the Copy dialog opens the Archive dialog, F9 runs the operation in the background */
+/** F5 in the Copy dialog opens the Archive dialog, F2 runs the operation in the background */
 
 static cb_ret_t
 file_mask_dialog_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
@@ -833,7 +833,7 @@ file_mask_dialog_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm
         if (parm == KEY_F (5) && file_mask_dialog_is_copy)
             ret = B_ARCHIVE;
 #ifdef ENABLE_BACKGROUND
-        else if (parm == KEY_F (9))
+        else if (parm == KEY_F (2))
             ret = B_USER;
 #endif
         if (ret != 0)
@@ -1552,7 +1552,7 @@ file_mask_dialog (file_op_context_t *ctx, gboolean only_one, const char *format,
             QUICK_START_BUTTONS (TRUE, TRUE),
                 QUICK_BUTTON (_ ("&OK"), B_ENTER, NULL, NULL),
 #ifdef ENABLE_BACKGROUND
-                QUICK_BUTTON (_ ("&Background (F9)"), B_USER, NULL, NULL),
+                QUICK_BUTTON (_ ("&Background (F2)"), B_USER, NULL, NULL),
 #endif
                 QUICK_BUTTON (_ ("A&rchive (F5)"), B_ARCHIVE, NULL, NULL),
                 QUICK_BUTTON (_ ("&Cancel"), B_CANCEL, NULL, NULL),

@@ -68,7 +68,7 @@ The **Create archive** dialog opens:
   cannot be encrypted, so the options are greyed out for them.
 
 <kbd>Enter</kbd> packs with the usual progress dialog: one bar for the current file and
-one for the total, counted in the original sizes, for every format. **Background (F9)**
+one for the total, counted in the original sizes, for every format. **Background (F2)**
 packs in a background job and leaves mc free; **Copy (F5)** goes back to the Copy
 dialog.
 
