@@ -1,4 +1,4 @@
-SUBDIRS = filemanager man2hlp vfs viewer
+SUBDIRS = filemanager man2hlp syntax vfs viewer
 
 if USE_INTERNAL_EDIT
 SUBDIRS += editor
@@ -51,6 +51,7 @@ endif
 
 libinternal_la_LIBADD = \
 	filemanager/libmcfilemanager.la \
+	syntax/libmcsyntax.la \
 	vfs/libmc-vfs.la \
 	viewer/libmcviewer.la \
 	$(DIFFLIB) $(EDITLIB) $(SUBSHELLLIB)

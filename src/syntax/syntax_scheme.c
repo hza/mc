@@ -1,5 +1,5 @@
 /*
-   Editor syntax highlighting: Sublime Text color schemes.
+   Syntax highlighting: Sublime Text color schemes.
 
    Copyright (C) 2026
    Free Software Foundation, Inc.
@@ -21,7 +21,7 @@
  */
 
 /** \file
- *  \brief Source: Sublime Text color schemes for editor syntax scopes
+ *  \brief Source: Sublime Text color schemes for syntax scopes
  *
  *  A .syntax file may use a scope token (e.g. KEYWORD_CONTROL) instead of literal colors.
  *  The token is translated to a Sublime scope (keyword.control) and its colors are taken
@@ -48,11 +48,11 @@
 #include "lib/tty/color.h"
 #include "lib/util.h"  // tilde_expand()
 
-#include "edit-impl.h"  // edit_options
-
 #include "syntax_scheme.h"
 
 /*** global variables ****************************************************************************/
+
+char *syntax_scheme_name = NULL;
 
 /*** file scope macro definitions ****************************************************************/
 
@@ -989,8 +989,8 @@ ensure_scheme (void)
     char *name, *path;
 
     // user's choice first, then the skin's suggestion
-    if (edit_options.syntax_color_scheme != NULL && *edit_options.syntax_color_scheme != '\0')
-        name = g_strdup (edit_options.syntax_color_scheme);
+    if (syntax_scheme_name != NULL && *syntax_scheme_name != '\0')
+        name = g_strdup (syntax_scheme_name);
     else
         name = g_strdup (skin_scheme ());
 

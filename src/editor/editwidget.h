@@ -13,6 +13,8 @@
 #include "edit-impl.h"
 #include "editbuffer.h"
 
+#include "src/syntax/syntax.h"
+
 /*** typedefs(not structures) and defined constants **********************************************/
 
 #define N_LINE_CACHES 32
@@ -28,26 +30,6 @@ struct edit_book_mark_t
     int c;      // color
     edit_book_mark_t *next;
     edit_book_mark_t *prev;
-};
-
-#define EDIT_SYNTAX_NEST_MAX 8
-
-typedef struct edit_syntax_rule_t edit_syntax_rule_t;
-struct edit_syntax_rule_t
-{
-    unsigned short keyword;
-    off_t end;
-    unsigned short context;
-    unsigned short _context;
-    unsigned char border;
-    // "nested" regions entered so far: the context and its "nested" keyword to return to
-    unsigned char nest_len;
-    // the current keyword is the closing delimiter of a nested region
-    unsigned char nest_closing;
-    unsigned short nest_context[EDIT_SYNTAX_NEST_MAX];
-    unsigned short nest_keyword[EDIT_SYNTAX_NEST_MAX];
-    // unbalanced opening characters seen inside each nested region
-    unsigned char nest_depth[EDIT_SYNTAX_NEST_MAX];
 };
 
 /*
@@ -155,13 +137,8 @@ struct WEdit
     unsigned int skip_detach_prompt : 1;  // Do not prompt whether to detach a file anymore
 
     // syntax highlighting
-    GSList *syntax_marker;
-    GPtrArray *rules;
-    off_t last_get_rule;
-    edit_syntax_rule_t rule;
-    char *syntax_type;             // description of syntax highlighting type being used
-    GTree *defines;                // List of defines
-    gboolean is_case_insensitive;  // selects language case sensitivity
+    syntax_t syntax;
+    char *syntax_type;  // description of syntax highlighting type being used
 
     // line break
     LineBreaks lb;

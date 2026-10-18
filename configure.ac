@@ -614,6 +614,7 @@ src/consaver/Makefile
 src/editor/Makefile
 src/man2hlp/Makefile
 src/subshell/Makefile
+src/syntax/Makefile
 src/viewer/Makefile
 src/diffviewer/Makefile
 src/filemanager/Makefile
@@ -728,6 +729,7 @@ tests/lib/widget/Makefile
 tests/src/Makefile
 tests/src/filemanager/Makefile
 tests/src/editor/Makefile
+tests/src/syntax/Makefile
 tests/src/editor/edit_complete_word_cmd_test_data.txt
 tests/src/vfs/Makefile
 tests/src/vfs/cpio/Makefile

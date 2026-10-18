@@ -146,6 +146,8 @@ src/editor/edit_complete_word_cmd
 src/editor/edit_crlf
 src/editor/edit_replace_cmd
 src/editor/test-suite.log
+src/syntax/syntax_scheme
+src/syntax/test-suite.log
 src/execute__execute_external_editor_or_viewer
 src/execute__execute_external_editor_or_viewer.log
 src/execute__execute_external_editor_or_viewer.trs

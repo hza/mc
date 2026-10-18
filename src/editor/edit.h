@@ -55,7 +55,6 @@ typedef struct
     char *backup_ext;
     char *filesize_threshold;
     char *stop_format_chars;
-    char *syntax_color_scheme;  // name or path of .sublime-color-scheme, "" for built-in
     gboolean visible_tabs;
     gboolean visible_tws;
     gboolean show_right_margin;

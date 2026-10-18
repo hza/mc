@@ -1,5 +1,5 @@
 /*
-   src/editor - tests for Sublime color scheme support in syntax highlighting
+   src/syntax - tests for Sublime color scheme support in syntax highlighting
 
    Copyright (C) 2026
    Free Software Foundation, Inc.
@@ -20,7 +20,7 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#define TEST_SUITE_NAME "/src/editor"
+#define TEST_SUITE_NAME "/src/syntax"
 
 #include "tests/mctest.h"
 
@@ -29,8 +29,7 @@
 #include "lib/fileloc.h"
 #include "lib/util.h"  // MC_PTR_FREE
 
-#include "src/editor/edit-impl.h"  // edit_options
-#include "src/editor/syntax_scheme.h"
+#include "src/syntax/syntax_scheme.h"
 
 /* lenient JSON: comments, trailing commas, variables */
 static const char test_scheme[] =
@@ -412,21 +411,21 @@ START_TEST (test_scheme_error)
     bad = write_file (dir, "bad.json", "{\n \"rules\": [ { \"scope\" \"x\" } ]\n}");
 
     // when/then: missing
-    edit_options.syntax_color_scheme = g_strdup ("no-such-scheme");
+    syntax_scheme_name = g_strdup ("no-such-scheme");
     mctest_assert_str_eq (syntax_scheme_error (), "Cannot find scheme \"no-such-scheme\"");
 
     // broken
-    g_free (edit_options.syntax_color_scheme);
-    edit_options.syntax_color_scheme = g_strdup (bad);
+    g_free (syntax_scheme_name);
+    syntax_scheme_name = g_strdup (bad);
     mctest_assert_str_eq (syntax_scheme_error (), "line 2: ':' expected");
 
     // fine
-    g_free (edit_options.syntax_color_scheme);
-    edit_options.syntax_color_scheme = g_strdup (good);
+    g_free (syntax_scheme_name);
+    syntax_scheme_name = g_strdup (good);
     mctest_assert_null (syntax_scheme_error ());
 
     syntax_scheme_done ();
-    MC_PTR_FREE (edit_options.syntax_color_scheme);
+    MC_PTR_FREE (syntax_scheme_name);
     g_unlink (good);
     g_unlink (bad);
     g_rmdir (dir);

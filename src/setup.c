@@ -67,6 +67,7 @@
 #include "src/editor/edit.h"
 #endif
 
+#include "src/syntax/syntax_scheme.h"  // syntax_scheme_name
 #include "src/viewer/mcviewer.h"  // For the externs
 
 #include "setup.h"
@@ -417,8 +418,8 @@ static const struct
     { "editor_backup_extension", &edit_options.backup_ext, "~" },
     { "editor_filesize_threshold", &edit_options.filesize_threshold, "64M" },
     { "editor_stop_format_chars", &edit_options.stop_format_chars, "-+*\\,.;:&>" },
-    { "editor_syntax_color_scheme", &edit_options.syntax_color_scheme, "" },
 #endif
+    { "editor_syntax_color_scheme", &syntax_scheme_name, "" },
     { "mcview_eof", &mcview_show_eof, "" },
     { NULL, NULL, NULL },
 };

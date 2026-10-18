@@ -1,5 +1,5 @@
 /** \file
- *  \brief Header: Sublime Text color schemes for editor syntax scopes
+ *  \brief Header: Sublime Text color schemes for syntax scopes
  */
 
 #ifndef MC__EDIT_SYNTAX_SCHEME_H
@@ -35,6 +35,8 @@ typedef struct
 
 /*** global variables defined in .c file *********************************************************/
 
+extern char *syntax_scheme_name;  // name or path of .sublime-color-scheme, "" for built-in
+
 /*** declarations of public functions ************************************************************/
 
 gboolean syntax_scheme_is_scope_token (const char *token);
@@ -48,7 +50,7 @@ void syntax_scheme_free (syntax_scheme_t *scheme);
 void syntax_scheme_resolve (const syntax_scheme_t *scheme, const char *ctx_scope, const char *scope,
                             syntax_scheme_depth_t depth, syntax_scheme_style_t *style);
 
-/* editor glue: resolve scope tokens with the configured scheme */
+/* resolve scope tokens with the configured scheme */
 void syntax_scheme_lookup (const char *ctx_token, const char *token, syntax_scheme_style_t *style);
 GPtrArray *syntax_scheme_list (void);
 const char *syntax_scheme_type (const char *name);
