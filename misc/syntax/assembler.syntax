@@ -392,11 +392,8 @@ context default
 
 context " " STRING_QUOTED_DOUBLE
 context ' ' STRING_QUOTED_SINGLE
-context exclusive ; \n COMMENT_LINE
+context exclusive \{;!\} \n COMMENT_LINE
     spellcheck
 
 context exclusive /\* \*/ COMMENT_BLOCK
-    spellcheck
-
-context exclusive ! \n COMMENT_LINE
     spellcheck

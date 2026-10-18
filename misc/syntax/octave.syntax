@@ -364,10 +364,7 @@ context default
 context %{ %} COMMENT_BLOCK
     spellcheck
 
-context # \n COMMENT_LINE
-    spellcheck
-
-context % \n COMMENT_LINE
+context \{#%\} \n COMMENT_LINE
     spellcheck
 
 context " " STRING_QUOTED_DOUBLE

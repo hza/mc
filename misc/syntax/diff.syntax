@@ -16,12 +16,10 @@ context linestart ---\s \n META_DIFF_HEADER
 context linestart \+\+\+\s \n META_DIFF_HEADER
 context linestart \*\*\*\s \n META_DIFF_HEADER
 context linestart === \n META_DIFF_HEADER
-context linestart \+ \n MARKUP_INSERTED
-context linestart > \n MARKUP_INSERTED
-context linestart - \n MARKUP_DELETED
-context linestart < \n MARKUP_DELETED
+context linestart \{\+>\} \n MARKUP_INSERTED
+context linestart \{-<\} \n MARKUP_DELETED
 context linestart ! \n MARKUP_CHANGED
-context linestart ? \n COMMENT_LINE
+context linestart \{?#\} \n COMMENT_LINE
 context linestart RCS\s \n META_DIFF_HEADER
 context linestart retrieving\s \n META_DIFF_HEADER
 context linestart Only\s \n META_DIFF_HEADER black
@@ -29,4 +27,3 @@ context linestart Common\s \n META_DIFF_HEADER black
 context linestart File\s \n META_DIFF_HEADER black
 context linestart Files\s \n META_DIFF_HEADER black
 context linestart Binary\s \n META_DIFF_HEADER black
-context linestart # \n COMMENT_LINE

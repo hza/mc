@@ -152,8 +152,7 @@ context default
 context /^#*/ STRING_REGEXP
 
 # Comments:
-context linestart # \n COMMENT_LINE
-context linestart $ \n COMMENT_LINE
+context linestart \{#$\} \n COMMENT_LINE
 
 # String:
 context " " STRING_QUOTED_DOUBLE

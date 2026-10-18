@@ -210,7 +210,7 @@ context default
 
     keyword whole __+__ SUPPORT_FUNCTION
 
-context """ """ STRING_QUOTED_DOUBLE
+context \[bBuU\]""" """ STRING_QUOTED_DOUBLE
     keyword \\" CONSTANT_CHARACTER_ESCAPE
     keyword \\\n CONSTANT_CHARACTER_ESCAPE
     keyword %% CONSTANT_OTHER_PLACEHOLDER
@@ -227,7 +227,7 @@ context """ """ STRING_QUOTED_DOUBLE
     keyword \\' CONSTANT_CHARACTER_ESCAPE
     keyword \\\{abtnvfr\} CONSTANT_CHARACTER_ESCAPE
 
-context ''' ''' STRING_QUOTED_SINGLE
+context \[bBuU\]''' ''' STRING_QUOTED_SINGLE
     keyword \\" CONSTANT_CHARACTER_ESCAPE
     keyword \\\n CONSTANT_CHARACTER_ESCAPE
     keyword %% CONSTANT_OTHER_PLACEHOLDER
@@ -243,6 +243,61 @@ context ''' ''' STRING_QUOTED_SINGLE
     keyword \\\\ CONSTANT_CHARACTER_ESCAPE
     keyword \\' CONSTANT_CHARACTER_ESCAPE
     keyword \\\{abtnvfr\} CONSTANT_CHARACTER_ESCAPE
+
+# Raw strings r"...", rb'...'
+context \[bB\]\{rR\}\[bB\]""" """ STRING_QUOTED_DOUBLE
+    # raw: a backslash escapes nothing, but still keeps the quote from ending the string
+    keyword \\" STRING_QUOTED_DOUBLE
+    keyword \\\\ STRING_QUOTED_DOUBLE
+
+context \[bB\]\{rR\}\[bB\]''' ''' STRING_QUOTED_SINGLE
+    # raw: a backslash escapes nothing, but still keeps the quote from ending the string
+    keyword \\' STRING_QUOTED_SINGLE
+    keyword \\\\ STRING_QUOTED_SINGLE
+
+# f-strings f"...{expr}...", rf'...'
+context \[rR\]\{fF\}\[rR\]""" """ STRING_QUOTED_DOUBLE
+    # f-string replacement fields {expr}; doubled braces are literal
+    keyword {{ CONSTANT_CHARACTER_ESCAPE
+    keyword }} CONSTANT_CHARACTER_ESCAPE
+    nested { } PUNCTUATION_SECTION
+    keyword \\" CONSTANT_CHARACTER_ESCAPE
+    keyword \\\n CONSTANT_CHARACTER_ESCAPE
+    keyword %% CONSTANT_OTHER_PLACEHOLDER
+    keyword %\[#0\s-\+,\]\[0123456789\]\[.\]\[0123456789\]\[L\]\{eEfgGoxX\} CONSTANT_OTHER_PLACEHOLDER
+    keyword %\[0\s-\+,\]\[0123456789\]\[.\]\[0123456789\]\[hl\]\{diu\} CONSTANT_OTHER_PLACEHOLDER
+    keyword %\[hl\]n CONSTANT_OTHER_PLACEHOLDER
+    keyword %\[.\]\[0123456789\]s CONSTANT_OTHER_PLACEHOLDER
+    keyword %[*] CONSTANT_OTHER_PLACEHOLDER
+    keyword %c CONSTANT_OTHER_PLACEHOLDER
+    keyword \\\{0123\}\{01234567\}\{01234567\} CONSTANT_CHARACTER_ESCAPE
+    keyword \\\\{01234567\}\{01234567\} CONSTANT_CHARACTER_ESCAPE
+    keyword \\\\{01234567\} CONSTANT_CHARACTER_ESCAPE
+    keyword \\\\ CONSTANT_CHARACTER_ESCAPE
+    keyword \\' CONSTANT_CHARACTER_ESCAPE
+    keyword \\\{abtnvfr\} CONSTANT_CHARACTER_ESCAPE
+
+context \[rR\]\{fF\}\[rR\]''' ''' STRING_QUOTED_SINGLE
+    # f-string replacement fields {expr}; doubled braces are literal
+    keyword {{ CONSTANT_CHARACTER_ESCAPE
+    keyword }} CONSTANT_CHARACTER_ESCAPE
+    nested { } PUNCTUATION_SECTION
+    keyword \\" CONSTANT_CHARACTER_ESCAPE
+    keyword \\\n CONSTANT_CHARACTER_ESCAPE
+    keyword %% CONSTANT_OTHER_PLACEHOLDER
+    keyword %\[#0\s-\+,\]\[0123456789\]\[.\]\[0123456789\]\[L\]\{eEfgGoxX\} CONSTANT_OTHER_PLACEHOLDER
+    keyword %\[0\s-\+,\]\[0123456789\]\[.\]\[0123456789\]\[hl\]\{diu\} CONSTANT_OTHER_PLACEHOLDER
+    keyword %\[hl\]n CONSTANT_OTHER_PLACEHOLDER
+    keyword %\[.\]\[0123456789\]s CONSTANT_OTHER_PLACEHOLDER
+    keyword %[*] CONSTANT_OTHER_PLACEHOLDER
+    keyword %c CONSTANT_OTHER_PLACEHOLDER
+    keyword \\\{0123\}\{01234567\}\{01234567\} CONSTANT_CHARACTER_ESCAPE
+    keyword \\\\{01234567\}\{01234567\} CONSTANT_CHARACTER_ESCAPE
+    keyword \\\\{01234567\} CONSTANT_CHARACTER_ESCAPE
+    keyword \\\\ CONSTANT_CHARACTER_ESCAPE
+    keyword \\' CONSTANT_CHARACTER_ESCAPE
+    keyword \\\{abtnvfr\} CONSTANT_CHARACTER_ESCAPE
+
 
 context # \n COMMENT_LINE
     keyword coding\{=:\}\[\s\]\[-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz\] COMMENT_LINE
@@ -250,7 +305,21 @@ context # \n COMMENT_LINE
     keyword -\*-\[\s\]coding:\[\s\]\[-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz\]\[\s\]-\*- COMMENT_LINE
     spellcheck
 
-context " " STRING_QUOTED_DOUBLE
+context \[bB\]\{rR\}\[bB\]" " STRING_QUOTED_DOUBLE
+    # raw: a backslash escapes nothing, but still keeps the quote from ending the string
+    keyword \\" STRING_QUOTED_DOUBLE
+    keyword \\\\ STRING_QUOTED_DOUBLE
+
+context \[bB\]\{rR\}\[bB\]' ' STRING_QUOTED_SINGLE
+    # raw: a backslash escapes nothing, but still keeps the quote from ending the string
+    keyword \\' STRING_QUOTED_SINGLE
+    keyword \\\\ STRING_QUOTED_SINGLE
+
+context \[rR\]\{fF\}\[rR\]" " STRING_QUOTED_DOUBLE
+    # f-string replacement fields {expr}; doubled braces are literal
+    keyword {{ CONSTANT_CHARACTER_ESCAPE
+    keyword }} CONSTANT_CHARACTER_ESCAPE
+    nested { } PUNCTUATION_SECTION
     keyword \\" CONSTANT_CHARACTER_ESCAPE
     keyword %% CONSTANT_OTHER_PLACEHOLDER
     keyword %\[#0\s-\+,\]\[0123456789\]\[.\]\[0123456789\]\[L\]\{eEfgGoxX\} CONSTANT_OTHER_PLACEHOLDER
@@ -264,7 +333,40 @@ context " " STRING_QUOTED_DOUBLE
     keyword \\' CONSTANT_CHARACTER_ESCAPE
     keyword \\\{abtnvfr\} CONSTANT_CHARACTER_ESCAPE
 
-context ' ' STRING_QUOTED_SINGLE
+context \[rR\]\{fF\}\[rR\]' ' STRING_QUOTED_SINGLE
+    # f-string replacement fields {expr}; doubled braces are literal
+    keyword {{ CONSTANT_CHARACTER_ESCAPE
+    keyword }} CONSTANT_CHARACTER_ESCAPE
+    nested { } PUNCTUATION_SECTION
+    keyword \\" CONSTANT_CHARACTER_ESCAPE
+    keyword \\\n CONSTANT_CHARACTER_ESCAPE
+    keyword %% CONSTANT_OTHER_PLACEHOLDER
+    keyword %\[#0\s-\+,\]\[0123456789\]\[.\]\[0123456789\]\[L\]\{eEfgGoxX\} CONSTANT_OTHER_PLACEHOLDER
+    keyword %\[0\s-\+,\]\[0123456789\]\[.\]\[0123456789\]\[hl\]\{diuxX\} CONSTANT_OTHER_PLACEHOLDER
+    keyword %\[hl\]n CONSTANT_OTHER_PLACEHOLDER
+    keyword %\[.\]\[0123456789\]s CONSTANT_OTHER_PLACEHOLDER
+    keyword %[*] CONSTANT_OTHER_PLACEHOLDER
+    keyword %c CONSTANT_OTHER_PLACEHOLDER
+    keyword \\\{0123\}\{01234567\}\{01234567\} CONSTANT_CHARACTER_ESCAPE
+    keyword \\\\ CONSTANT_CHARACTER_ESCAPE
+    keyword \\' CONSTANT_CHARACTER_ESCAPE
+    keyword \\\{abtnvfr\} CONSTANT_CHARACTER_ESCAPE
+
+context \[bBuU\]" " STRING_QUOTED_DOUBLE
+    keyword \\" CONSTANT_CHARACTER_ESCAPE
+    keyword %% CONSTANT_OTHER_PLACEHOLDER
+    keyword %\[#0\s-\+,\]\[0123456789\]\[.\]\[0123456789\]\[L\]\{eEfgGoxX\} CONSTANT_OTHER_PLACEHOLDER
+    keyword %\[0\s-\+,\]\[0123456789\]\[.\]\[0123456789\]\[hl\]\{diuxX\} CONSTANT_OTHER_PLACEHOLDER
+    keyword %\[hl\]n CONSTANT_OTHER_PLACEHOLDER
+    keyword %\[.\]\[0123456789\]s CONSTANT_OTHER_PLACEHOLDER
+    keyword %[*] CONSTANT_OTHER_PLACEHOLDER
+    keyword %c CONSTANT_OTHER_PLACEHOLDER
+    keyword \\\{0123\}\{01234567\}\{01234567\} CONSTANT_CHARACTER_ESCAPE
+    keyword \\\\ CONSTANT_CHARACTER_ESCAPE
+    keyword \\' CONSTANT_CHARACTER_ESCAPE
+    keyword \\\{abtnvfr\} CONSTANT_CHARACTER_ESCAPE
+
+context \[bBuU\]' ' STRING_QUOTED_SINGLE
     keyword \\" CONSTANT_CHARACTER_ESCAPE
     keyword \\\n CONSTANT_CHARACTER_ESCAPE
     keyword %% CONSTANT_OTHER_PLACEHOLDER

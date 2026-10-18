@@ -147,9 +147,7 @@ context { }\n ENTITY_NAME_SECTION
 context linestart -\s \n COMMENT_LINE
 
 # Comments:
-context linestart # \n COMMENT_LINE
-    spellcheck
-context linestart \s\[\s\]# \n COMMENT_LINE
+context linestart \[\s\]# \n COMMENT_LINE
     spellcheck
 context linestart /\s \n COMMENT_LINE
     spellcheck

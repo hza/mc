@@ -235,11 +235,5 @@ context default
 # comments and quotes
     keyword '*' STRING_QUOTED_SINGLE
 
-context exclusive linestart ! \n COMMENT_LINE
-   spellcheck
-context exclusive linestart \* \n COMMENT_LINE
-   spellcheck
-context exclusive linestart c \n COMMENT_LINE
-   spellcheck
-context exclusive linestart C \n COMMENT_LINE
+context exclusive linestart \{!\*cC\} \n COMMENT_LINE
    spellcheck

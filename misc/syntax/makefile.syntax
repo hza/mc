@@ -29,12 +29,8 @@ context default
     keyword linestart \t default red
 # targets
     keyword linestart \{abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-/%\}\[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-/%\]: ENTITY_NAME_FUNCTION
-# variables set with ?=
-    keyword linestart \{abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_\}\[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_\]\[\s\]? VARIABLE_OTHER
-# variables set with :=
-    keyword linestart \{abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_\}\[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_\]\[\s\]:= VARIABLE_OTHER
-# variables set with =
-    keyword linestart \{abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_\}\[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_\]\[\s\]= VARIABLE_OTHER
+# variables set with ?=, :=, +=, != (the "=" is left to start the value context)
+    keyword linestart \{abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_\}\[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_\]\[\s\]\{?:+!\} VARIABLE_OTHER
     keyword whole .PHONY KEYWORD_OTHER
     keyword whole .SUFFIXES KEYWORD_OTHER
     keyword whole .DEFAULT_GOAL KEYWORD_OTHER

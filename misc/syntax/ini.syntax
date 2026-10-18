@@ -7,10 +7,7 @@ context default
 context [ ] ENTITY_NAME_SECTION
 
 # comments:
-context # \n COMMENT_LINE
-    spellcheck
-
-context ; \n COMMENT_LINE
+context \{#;\} \n COMMENT_LINE
     spellcheck
 
 context exclusive = \n STRING_UNQUOTED

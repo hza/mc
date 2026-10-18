@@ -28,8 +28,5 @@ context exclusive \\\n \n
     keyword whole \{-0123456789\}\[0123456789\] CONSTANT_NUMERIC
     keyword whole #\{0123456789ABCDEFabcdef\}\[0123456789ABCDEFabcdef\] CONSTANT_OTHER
 
-context linestart # \n COMMENT_LINE
-    spellcheck
-
-context linestart ! \n COMMENT_LINE
+context linestart \{#!\} \n COMMENT_LINE
     spellcheck
