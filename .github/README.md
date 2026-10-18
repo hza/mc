@@ -1,9 +1,10 @@
 # mc slopfork
 
 A fork of [GNU Midnight Commander](https://github.com/MidnightCommander/mc) with
-improvements on top of upstream: hiding files with exclude patterns in the file manager,
-and in the editor modern color schemes for syntax highlighting, editing files with Windows
-(CRLF) line ends without damaging them, and a smarter syntax engine.
+improvements on top of upstream: in the file manager hiding files with exclude patterns
+and creating zip, 7z and tar archives from the Copy dialog, and in the editor modern color
+schemes for syntax highlighting, editing files with Windows (CRLF) line ends without
+damaging them, and a smarter syntax engine.
 
 It follows upstream `master` and adds its own commits on top. See the upstream
 [README](../README) for mc itself.
@@ -45,6 +46,38 @@ cursor in the file panel, or the marked files:
 **Options → Panel options → Use exclude file**; <kbd>Alt</kbd>-<kbd>.</kbd> still toggles dot
 files. **Command → Edit exclude file** opens the file itself in the editor. The panels reload
 as soon as the list changes.
+
+## Creating archives
+
+Upstream mc can browse into archives, but making one means the shell or a user menu
+entry that runs `tar`. Total Commander packs files with <kbd>Alt</kbd>-<kbd>F5</kbd>; this
+fork does it from the Copy dialog, with [libarchive](https://libarchive.org) built in, so
+no `zip` or `7z` command is needed.
+
+Press <kbd>F5</kbd> on a file or directory, then <kbd>F5</kbd> again (or **Archive (F5)**).
+The **Create archive** dialog opens:
+
+- **Archive path**: the other panel's directory plus the name of the current file, or of
+  the current directory when several files are marked, with the extension of the format.
+- **Format**: zip, 7z, or *Other:* tar, tar.gz, tar.bz2, tar.xz and tar.zst. Changing the
+  format changes the extension in the path.
+- **Compression**: Normal, Maximum, or *Other:* Store, Fastest, Fast and Ultra.
+- **Move to archive** deletes the files once the archive is complete.
+- **Encrypt files** protects a zip with a password; **Encrypt options…** sets it and
+  chooses AES-256 or ZipCrypto (for old unzip tools). libarchive cannot encrypt 7z and tar
+  cannot be encrypted, so the options are greyed out for them.
+
+<kbd>Enter</kbd> packs with the usual progress dialog: one bar for the current file and
+one for the total, counted in the original sizes, for every format. **Background (F9)**
+packs in a background job and leaves mc free; **Copy (F5)** goes back to the Copy
+dialog.
+
+- Files are read and the archive is written through mc's virtual file systems, so you can
+  pack from or to an SFTP or FTP panel.
+- Symlinks are stored as links, not as the files they point to.
+- The archive is written as `name.part` and renamed when it is complete, so an aborted or
+  failed run leaves nothing half-written behind. An existing archive is only replaced
+  after you confirm.
 
 ## Color schemes for syntax highlighting
 
@@ -182,7 +215,17 @@ make install
 ```
 
 On macOS with Homebrew, the dependencies are
-`brew install autoconf automake libtool pkgconf gettext glib libssh2 openssl s-lang`.
+`brew install autoconf automake libtool pkgconf gettext glib libarchive libssh2 openssl s-lang`.
+Homebrew does not put libarchive on the `pkg-config` path, so point configure at it:
+
+```sh
+PKG_CONFIG_PATH="$(brew --prefix libarchive)/lib/pkgconfig" ./configure --with-screen=slang --enable-vfs-sftp
+```
+
+On Linux install `libarchive-dev` (Debian, Ubuntu), `libarchive-devel` (Fedora) or
+`libarchive` (Arch). configure finds it on its own and prints `With libarchive: yes`;
+without it mc still builds, only creating archives is unavailable. `--without-libarchive`
+leaves it out on purpose.
 
 ## FAQ
 
@@ -202,6 +245,18 @@ Upstream GNU Midnight Commander has no exclude list. What it offers:
   not saved.
 - There is no `MC_IGNORE` environment variable and no ignore setting in the `ini` file;
   advice that mentions them is wrong. **Listing format…** only chooses the columns.
+
+### How do I create a zip or tar.gz archive in Midnight Commander?
+
+In **mc slopfork**, press <kbd>F5</kbd> twice on the files: the Create archive dialog packs
+them as zip, 7z, tar, tar.gz, tar.bz2, tar.xz or tar.zst, with a progress bar and an
+optional password for zip. See [Creating archives](#creating-archives).
+
+Upstream GNU Midnight Commander has no pack dialog. The user menu (<kbd>F2</kbd>) has
+entries that compress the current subdirectory to tar.gz, tar.bz2 and tar.7z by running
+`tar` in the shell, without a progress bar. For anything else run the tool yourself, for
+example `zip -r name.zip dir` on the command line (<kbd>Ctrl</kbd>-<kbd>Enter</kbd> puts the
+current file name there).
 
 ### How do I use color themes like Dracula, Night Owl or Ayu with Midnight Commander?
 
