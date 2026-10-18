@@ -469,6 +469,9 @@ mcview_execute_cmd (WView *view, long command)
     case CK_SyntaxOnOff:
         mcview_toggle_syntax_mode (view);
         break;
+    case CK_SyntaxSchemeChoose:
+        mcview_syntax_scheme_dialog (view);
+        break;
     case CK_Home:
         mcview_moveto_bol (view);
         break;

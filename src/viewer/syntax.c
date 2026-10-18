@@ -40,6 +40,8 @@
 #include "lib/tty/color.h"  // tty_use_colors()
 #include "lib/util.h"
 
+#include "src/syntax/scheme_dialog.h"
+
 #include "internal.h"
 
 /*** global variables ****************************************************************************/
@@ -92,6 +94,16 @@ mcview_syntax_first_line (WView *view)
     s[i] = '\0';
 
     return s;
+}
+
+/* recolor the text with the scheme just chosen */
+static void
+mcview_syntax_scheme_apply (void *data)
+{
+    WView *view = (WView *) data;
+
+    mcview_syntax_unload (view);
+    view->dirty++;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -160,6 +172,16 @@ mcview_syntax_color (WView *view, off_t offset)
         return VIEWER_NORMAL_COLOR;
 
     return syntax_get_color (&view->syntax, offset);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/** Choose the color scheme; the text follows the selection live. */
+
+void
+mcview_syntax_scheme_dialog (WView *view)
+{
+    syntax_scheme_dialog (mcview_syntax_scheme_apply, view);
 }
 
 /* --------------------------------------------------------------------------------------------- */

@@ -296,6 +296,7 @@ SelectCodepage = alt-e
 Shell = ctrl-o
 Ruler = alt-r
 SyntaxOnOff = alt-s
+SyntaxSchemeChoose = alt-shift-s
 History = alt-m
 
 [viewer:hex]

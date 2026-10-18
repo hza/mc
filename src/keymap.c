@@ -558,6 +558,7 @@ static const global_keymap_ini_t default_viewer_keymap[] = {
     { "Shell", "ctrl-o" },
     { "Ruler", "alt-r" },
     { "SyntaxOnOff", "alt-s" },
+    { "SyntaxSchemeChoose", "alt-shift-s" },
     { "SearchForward", "slash" },
     { "SearchBackward", "question" },
     { "SearchForwardContinue", "ctrl-s" },

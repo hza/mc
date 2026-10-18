@@ -3045,6 +3045,10 @@ Toggle syntax highlighting.  The viewer colors text with the rules of the
 internal editor.  In a file larger than a megabyte, a comment or string that
 began more than a megabyte before the shown text may be colored wrong.
 .TP
+.B Alt\-Shift\-s
+Choose the color scheme of syntax highlighting, shared with the internal
+editor.  The text follows the selection as it moves.
+.TP
 .B Alt\-e
 to change charset of displayed text may use Alt\-e (M\-e).
 Recoding is made from selected codepage into system codepage. To

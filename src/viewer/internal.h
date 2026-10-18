@@ -332,6 +332,7 @@ int mcview_nroff_seq_prev (mcview_nroff_t *nroff);
 void mcview_syntax_load (WView *view);
 void mcview_syntax_unload (WView *view);
 int mcview_syntax_color (WView *view, off_t offset);
+void mcview_syntax_scheme_dialog (WView *view);
 void mcview_toggle_syntax_mode (WView *view);
 
 /* search.c: */
