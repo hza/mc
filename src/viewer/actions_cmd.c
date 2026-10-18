@@ -60,10 +60,12 @@
 #include "src/filemanager/layout.h"
 #include "src/filemanager/filemanager.h"  // current_panel
 #include "src/filemanager/ext.h"          // regex_command_for()
+#include "src/filemanager/cmd.h"          // edit_file_at_line()
 
 #include "src/history.h"       // MC_HISTORY_SHARED_SEARCH
 #include "src/file_history.h"  // show_file_history()
 #include "src/execute.h"
+#include "src/setup.h"  // use_internal_edit
 #include "src/keymap.h"
 
 #include "internal.h"
@@ -363,6 +365,73 @@ mcview_load_file_from_history (WView *view)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/**
+ * Edit the shown file at the top line of the screen, then show it again as it was saved,
+ * at the line the editor left.
+ */
+
+static void
+mcview_edit (WView *view)
+{
+    Widget *h = WIDGET (WIDGET (view)->owner);
+    gboolean h_modal;
+    vfs_path_t *vpath;
+    char *filename;
+    dir_list *dir;
+    int *dir_idx;
+    off_t line, col, offset;
+    long ed_line, ed_col;
+    off_t ed_offset;
+    GArray *bookmarks = NULL;
+
+    // only a file as it is: not the output of a command or a filter
+    if (view->datasource != DS_FILE || view->filename_vpath == NULL || view->command != NULL)
+    {
+        message (D_ERROR, _ ("Edit"), _ ("Only a file shown as it is can be edited"));
+        return;
+    }
+
+    offset = view->dpy_start;
+    mcview_offset_to_coord (view, &line, &col, offset);
+    vpath = vfs_path_clone (view->filename_vpath);
+
+    // disallow editing the file in several editors
+    h_modal = widget_get_state (h, WST_MODAL);
+    widget_set_state (h, WST_MODAL, TRUE);
+    edit_file_at_line (vpath, use_internal_edit, (long) line + 1);
+    widget_set_state (h, WST_MODAL, h_modal);
+
+    /* where the editor left, unless it saved no position: read it before the viewer saves
+       its own */
+    load_file_position (vpath, &ed_line, &ed_col, &ed_offset, &bookmarks);
+    if (bookmarks != NULL)
+        g_array_free (bookmarks, TRUE);
+    if (ed_line != 1 || ed_col != 0 || ed_offset != 0)
+        offset = ed_offset;
+
+    // the file may have changed: load it again
+    filename = g_strdup (vfs_path_as_str (vpath));
+    dir = view->dir;
+    dir_idx = view->dir_idx;
+    view->dir = NULL;
+    view->dir_idx = NULL;
+    mcview_done (view);
+    mcview_init (view);
+    mcview_load (view, NULL, filename, 0, 0, 0);
+    view->dir = dir;
+    view->dir_idx = dir_idx;
+    view->dpy_start = mcview_bol (view, MIN (offset, mcview_get_filesize (view)), 0);
+    view->dpy_paragraph_skip_lines = 0;
+    view->dpy_wrap_dirty = TRUE;
+    g_free (filename);
+    vfs_path_free (vpath, TRUE);
+
+    view->dpy_bbar_dirty = TRUE;
+    view->dirty++;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static void
 mcview_help (const WView *view)
 {
@@ -468,6 +537,9 @@ mcview_execute_cmd (WView *view, long command)
         break;
     case CK_SyntaxOnOff:
         mcview_toggle_syntax_mode (view);
+        break;
+    case CK_Edit:
+        mcview_edit (view);
         break;
     case CK_SyntaxSchemeChoose:
         mcview_syntax_scheme_dialog (view);
