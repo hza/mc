@@ -145,6 +145,10 @@ typedef struct
     char *whole_word_chars_left;
     char *whole_word_chars_right;
     char *keyword_first_chars;
+    /* keywords that can start with a given byte, in file order: the list for byte c begins
+       at keyword_candidates[keyword_candidates_at[c]] and ends with 0 */
+    unsigned short *keyword_candidates;
+    unsigned int keyword_candidates_at[256];
     gboolean spelling;
     // first word is word[1]
     GPtrArray *keyword;
@@ -206,6 +210,7 @@ context_rule_free (gpointer rule)
     g_free (r->whole_word_chars_left);
     g_free (r->whole_word_chars_right);
     g_free (r->keyword_first_chars);
+    g_free (r->keyword_candidates);
 
     if (r->keyword != NULL)
         g_ptr_array_free (r->keyword, TRUE);
@@ -405,13 +410,83 @@ compare_word_to_right (const WEdit *edit, off_t i, const GString *text, const ch
 
 /* --------------------------------------------------------------------------------------------- */
 
-static const char *
-xx_strchr (const WEdit *edit, const unsigned char *s, int char_byte)
-{
-    while (*s >= '\005' && xx_tolower (edit, *s) != char_byte)
-        s++;
+/**
+ * Mark in @first the bytes a match of pattern @p can start with: a literal character, the
+ * characters of a set \{...\}, or those of an optional set \[...\] together with whatever
+ * can follow it.  A wildcard, or a pattern that may match nothing, can start anywhere.
+ */
 
-    return (const char *) s;
+static void
+mark_first_bytes (const WEdit *edit, const unsigned char *p, gboolean *first)
+{
+    int b;
+
+    while (TRUE)
+        switch (*p)
+        {
+        case SYNTAX_TOKEN_BRACE:
+            for (p++; *p != SYNTAX_TOKEN_BRACE && *p != '\0'; p++)
+                first[xx_tolower (edit, *p)] = TRUE;
+            return;
+        case SYNTAX_TOKEN_BRACKET:
+            for (p++; *p != SYNTAX_TOKEN_BRACKET && *p != '\0'; p++)
+                first[xx_tolower (edit, *p)] = TRUE;
+            if (*p == '\0')
+                return;
+            p++;
+            break;
+        case '\0':
+        case SYNTAX_TOKEN_STAR:
+        case SYNTAX_TOKEN_PLUS:
+            for (b = 0; b < 256; b++)
+                first[b] = TRUE;
+            return;
+        default:
+            first[xx_tolower (edit, *p)] = TRUE;
+            return;
+        }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Index the keywords of @c by the bytes they can start with, so that only those are tried at
+ * each position.  The order of the keywords is kept, since the first match wins.  Like the
+ * scan of keyword_first_chars it replaces, the index ends at the first empty keyword.
+ */
+
+static void
+index_keyword_candidates (const WEdit *edit, context_rule_t *c)
+{
+    const unsigned char *first_chars = (const unsigned char *) c->keyword_first_chars;
+    gboolean *first;
+    GArray *candidates;
+    unsigned short end = 0;
+    unsigned short n, k;
+    int b;
+
+    // first_chars[0] stands for the context itself, not a keyword
+    for (n = 1; first_chars[n] != '\0'; n++)
+        ;
+
+    // first[k * 256 + b]: keyword k can start with byte b
+    first = g_new0 (gboolean, (gsize) n * 256);
+    for (k = 1; k < n; k++)
+        mark_first_bytes (
+            edit, (const unsigned char *) SYNTAX_KEYWORD (g_ptr_array_index (c->keyword, k))->keyword->str,
+            first + k * 256);
+
+    candidates = g_array_new (FALSE, FALSE, sizeof (unsigned short));
+    for (b = 0; b < 256; b++)
+    {
+        c->keyword_candidates_at[b] = candidates->len;
+        for (k = 1; k < n; k++)
+            if (first[k * 256 + b])
+                g_array_append_val (candidates, k);
+        g_array_append_val (candidates, end);
+    }
+
+    g_free (first);
+    c->keyword_candidates = (unsigned short *) g_array_free (candidates, FALSE);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -533,19 +608,18 @@ apply_rules_going_right (WEdit *edit, off_t i)
     // check to turn on a keyword
     if (_rule.keyword == 0)
     {
-        const char *p;
+        const unsigned short *kc;
 
         r = CONTEXT_RULE (g_ptr_array_index (edit->rules, _rule.context));
-        p = r->keyword_first_chars;
 
-        if (p != NULL)
-            while (*(p = xx_strchr (edit, (const unsigned char *) p + 1, c)) != '\0')
+        if (r->keyword_candidates != NULL)
+            for (kc = r->keyword_candidates + r->keyword_candidates_at[c]; *kc != 0; kc++)
             {
                 syntax_keyword_t *k;
                 int count;
                 off_t e = -1;
 
-                count = p - r->keyword_first_chars;
+                count = *kc;
                 k = SYNTAX_KEYWORD (g_ptr_array_index (r->keyword, count));
                 if (k->keyword != 0)
                     e = compare_word_to_right (edit, i, k->keyword, k->whole_word_chars_left,
@@ -650,18 +724,17 @@ apply_rules_going_right (WEdit *edit, off_t i)
     // check again to turn on a keyword if the context switched
     if (contextchanged && _rule.keyword == 0)
     {
-        const char *p;
+        const unsigned short *kc;
 
         r = CONTEXT_RULE (g_ptr_array_index (edit->rules, _rule.context));
-        p = r->keyword_first_chars;
 
-        while (*(p = xx_strchr (edit, (const unsigned char *) p + 1, c)) != '\0')
+        for (kc = r->keyword_candidates + r->keyword_candidates_at[c]; *kc != 0; kc++)
         {
             syntax_keyword_t *k;
             int count;
             off_t e = -1;
 
-            count = p - r->keyword_first_chars;
+            count = *kc;
             k = SYNTAX_KEYWORD (g_ptr_array_index (r->keyword, count));
 
             if (k->keyword->len != 0)
@@ -1418,6 +1491,7 @@ edit_read_syntax_rules (WEdit *edit, FILE *f, char **args, int args_size)
             }
 
             c->keyword_first_chars = g_strndup (first_chars->str, first_chars->len);
+            index_keyword_candidates (edit, c);
         }
 
         g_string_free (first_chars, TRUE);
