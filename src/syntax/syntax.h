@@ -27,6 +27,8 @@ struct syntax_rule_t
     unsigned short context;
     unsigned short _context;
     unsigned char border;
+    // indentation of the line the current "indent" context started on
+    unsigned short indent;
     // "nested" regions entered so far: the context and its "nested" keyword to return to
     unsigned char nest_len;
     // the current keyword is the closing delimiter of a nested region

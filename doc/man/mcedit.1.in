@@ -337,6 +337,18 @@ Each context starts with a line of the form:
 .RI [ background ]
 .RI [ attributes ]
 .PP
+or, for a context that ends by indentation:
+.PP
+.B context
+.RB [ exclusive ]
+.B indent
+.RB [ whole | wholeright | wholeleft ]
+.RB [ linestart ]
+.I delim
+.RI [ foreground ]
+.RI [ background ]
+.RI [ attributes ]
+.PP
 The first context is an exception.  It must start with the command
 .PP
 .B context default
@@ -374,6 +386,26 @@ The
 .B exclusive
 option causes the text between the delimiters to be highlighted, but not
 the delimiters themselves.
+.PP
+A context with the
+.B indent
+option has no end delimiter.  It ends before the first non\-blank line
+that is indented no deeper than the line the context started on, and
+that line is highlighted with the default context.  Indentation counts
+leading spaces and tabs.  On the starting line it also counts list
+dashes followed by a space that come before the start delimiter, so
+that the block of \(lq\- key: |\(rq is measured from the key.  For example, YAML
+block scalars are described with
+.PP
+.nf
+  context exclusive indent \\{|>\\}\\[123456789\\+\\-\\s\\t\\]\\n STRING_UNQUOTED
+.fi
+.PP
+Like keywords, either delimiter may begin with a character set, an
+optional set or a wildcard.
+The end delimiter is only looked for after the start delimiter, so
+.B context \\[bB\\]' '
+highlights b'...' strings.
 .PP
 Each rule is a line of the form:
 .PP

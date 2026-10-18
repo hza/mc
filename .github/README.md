@@ -145,6 +145,9 @@ The behavior is covered by unit tests (`tests/src/editor/edit_crlf.c`).
   file's own rules, at any depth. Template strings (`` `a${b ? `c${d}` : ''}` ``), JSX
   `{expressions}`, shell `$(…)` inside strings and make functions such as
   `$(patsubst …,$(filter …))` are highlighted correctly.
+- **Indentation-ended contexts**: `context indent <start>` runs until a line indented no
+  deeper than its start line, without consuming that line. YAML block scalars (`key: |`,
+  `- >-`) take one rule at any depth, and the next key keeps its colour.
 - **Nested includes**: syntax files can share keyword lists. The thousand shell command
   keywords live in one file, `sh-words.syntax`, used by sh, PKGBUILD, ebuild, procmail,
   Dockerfiles and makefiles.

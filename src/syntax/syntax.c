@@ -118,12 +118,15 @@ typedef struct
 typedef struct
 {
     GString *left;
-    unsigned char first_left;
+    gboolean first_left[256];  // bytes a match of left can start with
     GString *right;
-    unsigned char first_right;
+    gboolean first_right[256];
     gboolean line_start_left;
     gboolean line_start_right;
     gboolean between_delimiters;
+    // "indent": no right delimiter; the context ends before the first non-blank line that is
+    // indented no more than the line it started on
+    gboolean indent_end;
     char *whole_word_chars_left;
     char *whole_word_chars_right;
     char *keyword_first_chars;
@@ -458,6 +461,59 @@ index_keyword_candidates (const syntax_t *syn, context_rule_t *c)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/**
+ * Indentation of the line where an "indent" context starts at @i: its leading spaces and
+ * tabs, plus any list dashes and spaces after them when the context starts further right,
+ * so that the block of "- key: |" is measured from the key, but that of "- |" from the dash.
+ */
+
+static unsigned short
+start_line_indent (const syntax_t *syn, off_t i)
+{
+    off_t p = i;
+    unsigned short plain = 0, n = 0;
+    int c;
+
+    while (p > 0 && syn->get_byte (syn->data, p - 1) != '\n')
+        p--;
+
+    for (; (c = syn->get_byte (syn->data, p)) == ' ' || c == '\t'; p++)
+        if (plain < G_MAXUINT16)
+            plain++;
+
+    for (n = plain; p < i; p++, n = n < G_MAXUINT16 ? n + 1 : n)
+    {
+        c = syn->get_byte (syn->data, p);
+        if (c != ' ' && c != '\t' && !(c == '-' && whiteness (syn->get_byte (syn->data, p + 1))))
+            return n;
+    }
+
+    return plain;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/** Whether the line starting at @i ends an "indent" context that started at @indent. */
+
+static gboolean
+line_ends_indent (const syntax_t *syn, off_t i, unsigned short indent)
+{
+    unsigned short n = 0;
+    int c;
+
+    if (syn->get_byte (syn->data, i - 1) != '\n')
+        return FALSE;
+
+    for (; (c = syn->get_byte (syn->data, i)) == ' ' || c == '\t'; i++)
+        if (n < G_MAXUINT16)
+            n++;
+
+    // blank lines belong to the block
+    return c != '\n' && c != 0 && n <= indent;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static void
 apply_rules_going_right (syntax_t *syn, off_t i)
 {
@@ -516,7 +572,9 @@ apply_rules_going_right (syntax_t *syn, off_t i)
         off_t e;
 
         r = CONTEXT_RULE (g_ptr_array_index (syn->rules, _rule.context));
-        if (r->first_right == c && (syn->rule.border & RULE_ON_RIGHT_BORDER) == 0
+        // the end delimiter cannot match inside the start one ("b'" of a b'...' string)
+        if (r->first_right[c] && (syn->rule.border & RULE_ON_RIGHT_BORDER) == 0
+            && !((syn->rule.border & RULE_ON_LEFT_BORDER) != 0 && i < syn->rule.end)
             && r->right->len != 0
             && (e = compare_word_to_right (syn, i, r->right, r->whole_word_chars_left,
                                            r->whole_word_chars_right, r->line_start_right))
@@ -541,6 +599,28 @@ apply_rules_going_right (syntax_t *syn, off_t i)
             // never turn off a context at 2
             found_left = TRUE;
             _rule.border = 0;
+        }
+    }
+
+    // an "indent" context ends, without consuming anything, at a line indented no deeper
+    // than its start line; an exclusive one may end right where its start delimiter does
+    if (_rule.keyword == 0 && !found_right)
+    {
+        if (_rule.context != 0 && _rule.border == 0)
+        {
+            r = CONTEXT_RULE (g_ptr_array_index (syn->rules, _rule.context));
+            if (r->indent_end && line_ends_indent (syn, i, _rule.indent))
+                _rule.context = 0;
+        }
+        else if (_rule.context == 0 && is_end && (syn->rule.border & RULE_ON_LEFT_BORDER) != 0
+                 && !found_left)
+        {
+            r = CONTEXT_RULE (g_ptr_array_index (syn->rules, _rule._context));
+            if (r->indent_end && line_ends_indent (syn, i, _rule.indent))
+            {
+                _rule.border = 0;
+                found_left = TRUE;
+            }
         }
     }
 
@@ -636,7 +716,7 @@ apply_rules_going_right (syntax_t *syn, off_t i)
                     contextchanged = TRUE;
                     _rule.keyword = 0;
 
-                    if (r->first_right == c)
+                    if (r->first_right[c])
                     {
                         off_t e = -1;
 
@@ -663,7 +743,7 @@ apply_rules_going_right (syntax_t *syn, off_t i)
             for (count = 1; count < syn->rules->len; count++)
             {
                 r = CONTEXT_RULE (g_ptr_array_index (syn->rules, count));
-                if (r->first_left == c)
+                if (r->first_left[c])
                 {
                     off_t e = -1;
 
@@ -675,6 +755,8 @@ apply_rules_going_right (syntax_t *syn, off_t i)
                         _rule.end = e;
                         _rule.border = RULE_ON_LEFT_BORDER;
                         _rule._context = count;
+                        if (r->indent_end)
+                            _rule.indent = start_line_indent (syn, i);
                         if (!r->between_delimiters && _rule.keyword == 0)
                         {
                             _rule.context = count;
@@ -1348,6 +1430,12 @@ read_syntax_rules (syntax_t *syn, FILE *f, char **args, int args_size)
                     c->between_delimiters = TRUE;
                 }
                 check_a;
+                if (strcmp (*a, "indent") == 0)
+                {
+                    a++;
+                    c->indent_end = TRUE;
+                }
+                check_a;
                 if (strcmp (*a, "whole") == 0)
                 {
                     a++;
@@ -1372,18 +1460,23 @@ read_syntax_rules (syntax_t *syn, FILE *f, char **args, int args_size)
                 }
                 check_a;
                 c->left = g_string_new (*a++);
-                check_a;
-                if (strcmp (*a, "linestart") == 0)
+                if (c->indent_end)
+                    c->right = g_string_new ("");
+                else
                 {
-                    a++;
-                    c->line_start_right = TRUE;
+                    check_a;
+                    if (strcmp (*a, "linestart") == 0)
+                    {
+                        a++;
+                        c->line_start_right = TRUE;
+                    }
+                    check_a;
+                    c->right = g_string_new (*a++);
                 }
-                check_a;
-                c->right = g_string_new (*a++);
                 xx_lowerize_pattern (syn, c->left->str);
                 xx_lowerize_pattern (syn, c->right->str);
-                c->first_left = c->left->str[0];
-                c->first_right = c->right->str[0];
+                mark_first_bytes (syn, (const unsigned char *) c->left->str, c->first_left);
+                mark_first_bytes (syn, (const unsigned char *) c->right->str, c->first_right);
             }
             c->keyword = g_ptr_array_new_with_free_func (syntax_keyword_free);
             k = g_new0 (syntax_keyword_t, 1);
