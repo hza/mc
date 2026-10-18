@@ -37,6 +37,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <setjmp.h>
 
 #ifdef HAVE_LIBARCHIVE
 #include <archive.h>
@@ -642,6 +643,9 @@ archive_pack_run (archive_pack_opts_t *opts, const vfs_path_t *src_dir, GPtrArra
     file_op_context_t *ctx;
     gboolean ok;
     guint i;
+#ifdef ENABLE_BACKGROUND
+    jmp_buf bg_jump;
+#endif
 
     ctx = file_op_context_new (OP_COPY);
     ctx->total_transfer_start = g_get_monotonic_time ();
@@ -671,6 +675,26 @@ archive_pack_run (archive_pack_opts_t *opts, const vfs_path_t *src_dir, GPtrArra
         vfs_path_free (vpath, TRUE);
     }
     ctx->totals_computed = TRUE;
+    // a file cannot be left out of the archive once its data has started
+    ctx->no_skip = TRUE;
+
+#ifdef ENABLE_BACKGROUND
+    if (!mc_global.we_are_background)
+    {
+        if (setjmp (bg_jump) != 0)
+        {
+            // the Background button: the child packs on with our VFS connections
+            vfs_path_t *vpath;
+
+            mc_setctl (src_dir, VFS_SETCTL_FORGET, NULL);
+            vpath = vfs_path_from_str (opts->archive_path);
+            mc_setctl (vpath, VFS_SETCTL_FORGET, NULL);
+            vfs_path_free (vpath, TRUE);
+            return FALSE;  // the context stays with the job
+        }
+        ctx->bg_jump = &bg_jump;
+    }
+#endif
 
     if (!mc_global.we_are_background)
     {
@@ -679,6 +703,9 @@ archive_pack_run (archive_pack_opts_t *opts, const vfs_path_t *src_dir, GPtrArra
     }
 
     ok = pack_do (ctx, opts, src_dir, names);
+#ifdef ENABLE_BACKGROUND
+    ctx->bg_jump = NULL;
+#endif
 
 #ifdef ENABLE_BACKGROUND
     if (mc_global.we_are_background)

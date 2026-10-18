@@ -53,6 +53,7 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <setjmp.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -3552,6 +3553,10 @@ panel_operate (void *source_panel, FileOperation operation, gboolean force_singl
     filegui_dialog_type_t dialog_type = FILEGUI_DIALOG_ONE_ITEM;
 
     gboolean do_bg = FALSE;  // do background operation?
+#ifdef ENABLE_BACKGROUND
+    jmp_buf bg_jump;                  // the Background button of the progress dialog comes here
+    volatile gboolean to_bg = FALSE;  // ... and then the child does the job
+#endif
 
     linklist = free_linklist (linklist);
     dest_dirs = free_linklist (dest_dirs);
@@ -3640,6 +3645,22 @@ panel_operate (void *source_panel, FileOperation operation, gboolean force_singl
         && (mc_setctl (panel->cwd_vpath, VFS_SETCTL_STALE_DATA, GUINT_TO_POINTER (1)) != 0))
         save_cwd = vfs_path_clone (panel->cwd_vpath);
 
+#ifdef ENABLE_BACKGROUND
+    if (!mc_global.we_are_background)
+    {
+        if (setjmp (bg_jump) != 0)
+        {
+            // the child goes on with the job and its VFS connections: forget them here
+            mc_setctl (panel->cwd_vpath, VFS_SETCTL_FORGET, NULL);
+            if (dest_vpath != NULL)
+                mc_setctl (dest_vpath, VFS_SETCTL_FORGET, NULL);
+            to_bg = TRUE;
+            goto clean_up;
+        }
+        ctx->bg_jump = &bg_jump;
+    }
+#endif
+
     // Now, let's do the job
 
     // This code is only called by the tree and panel code
@@ -3720,6 +3741,9 @@ panel_operate (void *source_panel, FileOperation operation, gboolean force_singl
 
 clean_up:
     // Clean up
+#ifdef ENABLE_BACKGROUND
+    ctx->bg_jump = NULL;
+#endif
     if (save_cwd != NULL)
     {
         mc_setctl (save_cwd, VFS_SETCTL_STALE_DATA, NULL);
@@ -3749,6 +3773,14 @@ clean_up:
 
         vfs_shut ();
         my_exit (EXIT_SUCCESS);
+    }
+
+    // a background job keeps the context, as with the Background button of the Copy dialog
+    if (to_bg)
+    {
+        update_panels (UP_OPTIMIZE, UP_KEEPSEL);
+        repaint_screen ();
+        return FALSE;
     }
 #endif
 

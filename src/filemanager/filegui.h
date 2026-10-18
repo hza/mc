@@ -50,7 +50,8 @@ typedef enum
     FILE_ABORT,
     FILE_IGNORE,
     FILE_IGNORE_ALL,
-    FILE_SUSPEND
+    FILE_SUSPEND,
+    FILE_BACKGROUND
 } FileProgressStatus;
 
 /* First argument passed to real functions */
@@ -149,6 +150,12 @@ typedef struct
 
     // Time of pauses in query dialogs
     gint64 pauses;
+
+    // The progress dialog has no Skip button (the operation cannot skip a file halfway)
+    gboolean no_skip;
+    /* Where the parent continues (a jmp_buf) when the progress dialog sends the running
+     * operation to the background; NULL if it cannot */
+    void *bg_jump;
 
     // User interface data goes here
     void *ui;

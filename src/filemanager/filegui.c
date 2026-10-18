@@ -53,6 +53,7 @@
 #include <config.h>
 
 #include <errno.h>
+#include <setjmp.h>
 #include <ctype.h>
 #include <limits.h>  // INT_MAX
 #include <stdio.h>
@@ -148,6 +149,9 @@ statfs (char const *filename, struct fs_info *buf)
 #include "lib/widget.h"
 
 #include "src/setup.h"  // verbose, safe_overwrite, copymove_persistent_ext2_attr
+#ifdef ENABLE_BACKGROUND
+#include "src/background.h"  // do_background()
+#endif
 
 #include "filemanager.h"
 
@@ -245,6 +249,7 @@ static struct
     { NULL, FILE_SUSPEND, N_ ("S&uspend"), NORMAL_BUTTON, -1 },
     { NULL, FILE_SUSPEND, N_ ("Con&tinue"), NORMAL_BUTTON, -1 },
     { NULL, FILE_ABORT, N_ ("&Abort"), NORMAL_BUTTON, -1 },
+    { NULL, FILE_BACKGROUND, N_ ("&Background (F9)"), NORMAL_BUTTON, -1 },
 };
 
 /* --------------------------------------------------------------------------------------------- */
@@ -396,6 +401,17 @@ file_ui_op_dlg_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, 
             return MSG_HANDLED;
         }
         return MSG_NOT_HANDLED;
+
+#ifdef ENABLE_BACKGROUND
+    case MSG_UNHANDLED_KEY:
+        // F9 is the Background button
+        if (parm == KEY_F (9) && progress_buttons[4].w != NULL)
+        {
+            DIALOG (w)->ret_value = FILE_BACKGROUND;  // for file_progress_check_buttons()
+            return MSG_HANDLED;
+        }
+        return MSG_NOT_HANDLED;
+#endif
 
     default:
         return dlg_default_callback (w, sender, msg, parm, data);
@@ -731,15 +747,69 @@ place_progress_buttons (WDialog *h, const gboolean suspended)
     const Widget *w = WIDGET (h);
 
     const size_t i = suspended ? 2 : 1;
-    const int buttons_width =
-        2 + progress_buttons[0].width + progress_buttons[3].width + progress_buttons[i].width;
+    // Background and Skip are not always there
+    const size_t order[] = { 4, 0, i, 3 };
+    int buttons_width = -1;
+    int x;
+    size_t k;
 
     button_set_text (BUTTON (progress_buttons[i].w), progress_buttons[i].text);
 
-    progress_buttons[0].w->rect.x = w->rect.x + (w->rect.cols - buttons_width) / 2;
-    progress_buttons[i].w->rect.x = progress_buttons[0].w->rect.x + progress_buttons[0].width + 1;
-    progress_buttons[3].w->rect.x = progress_buttons[i].w->rect.x + progress_buttons[i].width + 1;
+    for (k = 0; k < G_N_ELEMENTS (order); k++)
+        if (progress_buttons[order[k]].w != NULL)
+            buttons_width += progress_buttons[order[k]].width + 1;
+
+    x = w->rect.x + (w->rect.cols - buttons_width) / 2;
+    for (k = 0; k < G_N_ELEMENTS (order); k++)
+        if (progress_buttons[order[k]].w != NULL)
+        {
+            progress_buttons[order[k]].w->rect.x = x;
+            x += progress_buttons[order[k]].width + 1;
+        }
 }
+
+#ifdef ENABLE_BACKGROUND
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Send the running operation to the background. The child goes on with it and has no dialog;
+ * the parent closes the dialog and jumps to ctx->bg_jump, where the operation set it up.
+ */
+
+static void
+file_progress_to_background (file_op_context_t *ctx)
+{
+    file_progress_ui_t *ui = ctx->ui;
+    jmp_buf *jump = (jmp_buf *) ctx->bg_jump;
+    const char *title;
+    char *info;
+    int v;
+
+    if (jump == NULL || ui == NULL)
+        return;
+
+    title = FRAME (ui->op_dlg->bg)->title;
+    info = g_strstrip (g_strdup (title != NULL ? title : op_names[ctx->operation]));
+
+    v = do_background (ctx, info);
+    if (v == -1)
+    {
+        message (D_ERROR, MSG_ERROR, _ ("Sorry, I could not put the job in background"));
+        return;
+    }
+
+    ctx->bg_jump = NULL;
+
+    if (v == 0)
+    {
+        // the child: the screen belongs to the parent, so drop the dialog without drawing it
+        ctx->ui = NULL;
+        return;
+    }
+
+    file_progress_ui_destroy (ctx);
+    longjmp (*jump, 1);
+}
+#endif
 
 /* --------------------------------------------------------------------------------------------- */
 
@@ -874,6 +944,12 @@ get_event:
     case FILE_ABORT:
         ctx->suspended = FALSE;
         return FILE_ABORT;
+#ifdef ENABLE_BACKGROUND
+    case FILE_BACKGROUND:
+        ctx->suspended = FALSE;
+        file_progress_to_background (ctx);
+        return FILE_CONT;
+#endif
     case FILE_SUSPEND:
         ctx->suspended = !ctx->suspended;
         place_progress_buttons (ui->op_dlg, ctx->suspended);
@@ -989,6 +1065,11 @@ file_progress_ui_create (file_op_context_t *ctx, gboolean with_eta,
                             progress_buttons[0].text, progress_button_callback));
     if (progress_buttons[0].width == -1)
         progress_buttons[0].width = widget_get_columns (progress_buttons[0].w);
+    if (ctx->no_skip)
+    {
+        widget_destroy (progress_buttons[0].w);
+        progress_buttons[0].w = NULL;
+    }
 
     progress_buttons[1].w =
         WIDGET (button_new (y, 0, progress_buttons[1].action, progress_buttons[1].flags,
@@ -1013,11 +1094,27 @@ file_progress_ui_create (file_op_context_t *ctx, gboolean with_eta,
     if (progress_buttons[3].width == -1)
         progress_buttons[3].width = widget_get_columns (progress_buttons[3].w);
 
-    group_add_widget (g, progress_buttons[0].w);
+    progress_buttons[4].w = NULL;
+#ifdef ENABLE_BACKGROUND
+    // only operations that know where to continue can go to the background
+    if (ctx->bg_jump != NULL)
+    {
+        progress_buttons[4].w =
+            WIDGET (button_new (y, 0, progress_buttons[4].action, progress_buttons[4].flags,
+                                progress_buttons[4].text, progress_button_callback));
+        if (progress_buttons[4].width == -1)
+            progress_buttons[4].width = widget_get_columns (progress_buttons[4].w);
+        group_add_widget (g, progress_buttons[4].w);
+    }
+#endif
+
+    if (progress_buttons[0].w != NULL)
+        group_add_widget (g, progress_buttons[0].w);
     group_add_widget (g, progress_buttons[1].w);
     group_add_widget (g, progress_buttons[3].w);
 
-    buttons_width = 2 + progress_buttons[0].width
+    buttons_width = 2 + (progress_buttons[0].w != NULL ? progress_buttons[0].width + 1 : 0)
+        + (progress_buttons[4].w != NULL ? progress_buttons[4].width + 1 : 0)
         + MAX (progress_buttons[1].width, progress_buttons[2].width) + progress_buttons[3].width;
 
     // adjust dialog sizes
@@ -1028,7 +1125,10 @@ file_progress_ui_create (file_op_context_t *ctx, gboolean with_eta,
 
     place_progress_buttons (ui->op_dlg, FALSE);
 
-    widget_select (progress_buttons[0].w);
+    // Enter sends the operation to the background, else skips the file
+    widget_select (progress_buttons[4].w != NULL       ? progress_buttons[4].w
+                       : progress_buttons[0].w != NULL ? progress_buttons[0].w
+                                                       : progress_buttons[1].w);
 
     // we will manage the dialog without any help, that's why we have to call dlg_init
     dlg_init (ui->op_dlg);
