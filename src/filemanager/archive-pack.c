@@ -160,7 +160,7 @@ pack_level (const char *filter, int level)
 {
     if (strcmp (filter, "zstd") == 0)
         return level >= ARCHIVE_LEVEL_ULTRA ? 22 : level == 9 ? 19 : MAX (level, 1);
-    if (strcmp (filter, "bzip2") == 0)
+    if (strcmp (filter, "bzip2") == 0 || strcmp (filter, "lz4") == 0)
         return CLAMP (level, 1, 9);
     return MIN (level, 9);
 }
@@ -226,6 +226,14 @@ pack_setup (struct archive *a, const archive_pack_opts_t *o)
         return r == ARCHIVE_OK;
     }
 
+    // iso and cpio have no compression level
+    if (strcmp (o->format, "iso") == 0)
+        return archive_write_set_format_iso9660 (a) == ARCHIVE_OK
+            && pack_set_option (a, "iso9660", "joliet", "long");
+
+    if (strcmp (o->format, "cpio") == 0)
+        return archive_write_set_format_cpio_newc (a) == ARCHIVE_OK;
+
     // tar, with or without a compression filter
     r = archive_write_set_format_pax_restricted (a);
     if (r != ARCHIVE_OK)
@@ -251,6 +259,23 @@ pack_setup (struct archive *a, const archive_pack_opts_t *o)
         filter = "zstd";
         r = archive_write_add_filter_zstd (a);
     }
+    else if (strcmp (o->format, "tar.lz4") == 0)
+    {
+        filter = "lz4";
+        r = archive_write_add_filter_lz4 (a);
+    }
+    else if (strcmp (o->format, "tar.lz") == 0)
+    {
+        filter = "lzip";
+        r = archive_write_add_filter_lzip (a);
+    }
+    else if (strcmp (o->format, "tar.lzma") == 0)
+    {
+        filter = "lzma";
+        r = archive_write_add_filter_lzma (a);
+    }
+    else if (strcmp (o->format, "tar.Z") == 0)
+        r = archive_write_add_filter_compress (a);  // no compression level
 
     if (r != ARCHIVE_OK)
         return FALSE;

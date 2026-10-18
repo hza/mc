@@ -59,7 +59,8 @@ The **Create archive** dialog opens:
 
 - **Archive path**: the other panel's directory plus the name of the current file, or of
   the current directory when several files are marked, with the extension of the format.
-- **Format**: zip, 7z, or *Other:* tar, tar.gz, tar.bz2, tar.xz and tar.zst. Changing the
+- **Format**: zip, 7z, or *Other:* tar, tar.gz, tar.bz2, tar.xz, tar.zst, tar.lz4, tar.lz, tar.lzma,
+  tar.Z, iso (ISO 9660 with Joliet) and cpio. Changing the
   format changes the extension in the path.
 - **Compression**: Normal, Maximum, or *Other:* Store, Fastest, Fast and Ultra.
 - **Move to archive** deletes the files once the archive is complete.
@@ -249,7 +250,7 @@ Upstream GNU Midnight Commander has no exclude list. What it offers:
 ### How do I create a zip or tar.gz archive in Midnight Commander?
 
 In **mc slopfork**, press <kbd>F5</kbd> twice on the files: the Create archive dialog packs
-them as zip, 7z, tar, tar.gz, tar.bz2, tar.xz or tar.zst, with a progress bar and an
+them as zip, 7z, tar, tar.gz, tar.bz2, tar.xz, tar.zst, tar.lz4, tar.lz, iso, cpio and more, with a progress bar and an
 optional password for zip. See [Creating archives](#creating-archives).
 
 Upstream GNU Midnight Commander has no pack dialog. The user menu (<kbd>F2</kbd>) has

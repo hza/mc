@@ -71,7 +71,9 @@ typedef struct
 #define DROPDOWN_COLS 14
 
 static const char *format_items[] = { "zip", "7z", N_ ("Other:") };
-static const char *format_other[] = { "tar", "tar.gz", "tar.bz2", "tar.xz", "tar.zst" };
+static const char *format_other[] = { "tar",     "tar.gz",  "tar.bz2", "tar.xz",
+                                      "tar.zst", "tar.lz4", "tar.lz",  "tar.lzma",
+                                      "tar.Z",   "iso",     "cpio" };
 static const char *compression_items[] = { N_ ("Normal"), N_ ("Maximum"), N_ ("Other:") };
 static const char *compression_other[] = { N_ ("Store"), N_ ("Fastest"), N_ ("Fast"),
                                            N_ ("Ultra") };

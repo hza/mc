@@ -19,7 +19,7 @@
 typedef struct
 {
     char *archive_path;  // destination, may be on any VFS
-    const char *format;  // "zip", "7z", "tar", "tar.gz", "tar.bz2", "tar.xz", "tar.zst"
+    const char *format;  // "zip", "7z", "tar", "tar.gz", "tar.bz2", "tar.xz", "tar.zst", ...
     int level;           // 0 store, 1 fastest ... 9 maximum, ARCHIVE_LEVEL_ULTRA
     gboolean move;       // delete the sources after the archive is written
     char *password;      // NULL: no encryption (zip only)
