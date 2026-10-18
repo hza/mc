@@ -3,6 +3,7 @@ noinst_LTLIBRARIES = libmcfilemanager.la
 
 libmcfilemanager_la_SOURCES = \
 	achown.c \
+	archive.c archive.h \
 	boxes.c boxes.h \
 	cd.c cd.h \
 	chmod.c \

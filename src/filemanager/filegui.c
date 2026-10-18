@@ -151,6 +151,7 @@ statfs (char const *filename, struct fs_info *buf)
 
 #include "filemanager.h"
 
+#include "archive.h"  // archive_dialog()
 #include "filegui.h"
 
 /* }}} */
@@ -160,6 +161,8 @@ statfs (char const *filename, struct fs_info *buf)
 gboolean classic_progressbar = TRUE;
 
 /*** file scope macro definitions ****************************************************************/
+
+#define B_ARCHIVE                     (B_USER + 1)  // the Archive button of the Copy dialog
 
 #define truncFileStringSecure(dlg, s) path_trunc (s, WIDGET (dlg)->rect.cols - 10)
 
@@ -227,6 +230,8 @@ typedef struct
 /*** forward declarations (file scope functions) *************************************************/
 
 /*** file scope variables ************************************************************************/
+
+static gboolean file_mask_dialog_is_copy = FALSE;  // the dialog has the Archive button
 
 static struct
 {
@@ -743,6 +748,33 @@ progress_button_callback (MC_UNUSED WButton *button, MC_UNUSED int action)
 {
     // don't close dialog in any case
     return 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/** F5 in the Copy dialog opens the Archive dialog, F9 runs the operation in the background */
+
+static cb_ret_t
+file_mask_dialog_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
+{
+    if (msg == MSG_UNHANDLED_KEY)
+    {
+        int ret = 0;
+
+        if (parm == KEY_F (5) && file_mask_dialog_is_copy)
+            ret = B_ARCHIVE;
+#ifdef ENABLE_BACKGROUND
+        else if (parm == KEY_F (9))
+            ret = B_USER;
+#endif
+        if (ret != 0)
+        {
+            DIALOG (w)->ret_value = ret;
+            dlg_close (DIALOG (w));
+            return MSG_HANDLED;
+        }
+    }
+
+    return dlg_default_callback (w, sender, msg, parm, data);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -1404,8 +1436,9 @@ file_mask_dialog (file_op_context_t *ctx, gboolean only_one, const char *format,
             QUICK_START_BUTTONS (TRUE, TRUE),
                 QUICK_BUTTON (_ ("&OK"), B_ENTER, NULL, NULL),
 #ifdef ENABLE_BACKGROUND
-                QUICK_BUTTON (_ ("&Background"), B_USER, NULL, NULL),
+                QUICK_BUTTON (_ ("&Background (F9)"), B_USER, NULL, NULL),
 #endif
+                QUICK_BUTTON (_ ("A&rchive (F5)"), B_ARCHIVE, NULL, NULL),
                 QUICK_BUTTON (_ ("&Cancel"), B_CANCEL, NULL, NULL),
             QUICK_END,
             // clang-format on
@@ -1413,18 +1446,43 @@ file_mask_dialog (file_op_context_t *ctx, gboolean only_one, const char *format,
 
         WRect r = { -1, -1, 0, fmd_xlen };
 
+        // the Archive button is only for Copy
+        if (ctx->operation != OP_COPY)
+        {
+            quick_widget_t *qw;
+
+            for (qw = quick_widgets; qw->widget_type != quick_end; qw++)
+                if (qw->widget_type == quick_button && qw->u.button.action == B_ARCHIVE)
+                {
+                    memmove (qw, qw + 1,
+                             (char *) (quick_widgets + G_N_ELEMENTS (quick_widgets))
+                                 - (char *) (qw + 1));
+                    break;
+                }
+        }
+
         quick_dialog_t qdlg = {
             .rect = r,
             .title = op_names[ctx->operation],
             .help = "[Mask Copy/Rename]",
             .widgets = quick_widgets,
-            .callback = NULL,
+            .callback = file_mask_dialog_callback,
             .mouse_callback = NULL,
         };
 
         while (TRUE)
         {
+            file_mask_dialog_is_copy = ctx->operation == OP_COPY;
             val = quick_dialog_skip (&qdlg, 4);
+
+            if (val == B_ARCHIVE)
+            {
+                MC_PTR_FREE (source_mask);
+                MC_PTR_FREE (dest_dir);
+                if (archive_dialog ((int) fmd_xlen))
+                    continue;  // back to Copy
+                val = B_CANCEL;
+            }
 
             if (val == B_CANCEL)
             {
