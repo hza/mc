@@ -2212,6 +2212,10 @@ end_bg_process (file_op_context_t *ctx, enum OperationMode mode)
 
     unregister_task_with_pid (pid);
     //     file_op_context_destroy(ctx);
+
+    // show what the job has changed
+    update_panels (UP_RELOAD, UP_KEEPSEL);
+    repaint_screen ();
     return 1;
 }
 #endif
