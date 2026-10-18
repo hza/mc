@@ -171,6 +171,7 @@ enum
     CK_ToggleExclude,
     CK_ShowExtKeys,
     CK_HighlightGroup,
+    CK_Pack,
     CK_PanelTree,
     CK_Tree,
     CK_SplitVertHoriz,

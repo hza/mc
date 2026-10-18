@@ -7,6 +7,7 @@ View = f3
 Edit = f4
 # EditForceInternal =
 Copy = f5
+# Pack =
 Move = f6
 MakeDir = f7
 Delete = f8

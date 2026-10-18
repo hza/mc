@@ -409,14 +409,18 @@ archive_level (void)
 }
 
 /* --------------------------------------------------------------------------------------------- */
-/** The names to pack: the marked entries, or the current one */
+/**
+ * The names to pack, relative to *@src_dir: the marked entries, or the current one, or on ".."
+ * the panel directory itself (from its parent). *@src_dir is to be freed.
+ */
 
 static GPtrArray *
-archive_sources (const WPanel *panel)
+archive_sources (const WPanel *panel, vfs_path_t **src_dir)
 {
     GPtrArray *names;
 
     names = g_ptr_array_new_with_free_func (g_free);
+    *src_dir = vfs_path_clone (panel->cwd_vpath);
 
     if (panel->marked > 0)
     {
@@ -433,6 +437,23 @@ archive_sources (const WPanel *panel)
         fe = panel_current_entry (panel);
         if (fe != NULL && !DIR_IS_DOTDOT (fe->fname->str))
             g_ptr_array_add (names, g_strdup (fe->fname->str));
+        else if (fe != NULL)
+        {
+            const char *cwd = vfs_path_as_str (panel->cwd_vpath);
+            char *parent, *base;
+
+            parent = g_path_get_dirname (cwd);
+            base = g_path_get_basename (cwd);
+            if (strcmp (base, PATH_SEP_STR) != 0 && strcmp (base, ".") != 0)
+            {
+                vfs_path_free (*src_dir, TRUE);
+                *src_dir = vfs_path_from_str (parent);
+                g_ptr_array_add (names, base);
+                base = NULL;
+            }
+            g_free (base);
+            g_free (parent);
+        }
     }
 
     return names;
@@ -485,6 +506,24 @@ archive_dialog (int cols)
     WButton *buttons[4];
     int n = 0;
     int i, x, ret;
+
+    // nothing to pack, as on ".." of the root directory
+    {
+        GPtrArray *names;
+        gboolean empty;
+
+        vfs_path_t *src_dir;
+
+        names = archive_sources (panel, &src_dir);
+        empty = names->len == 0;
+        g_ptr_array_free (names, TRUE);
+        vfs_path_free (src_dir, TRUE);
+        if (empty)
+        {
+            message (D_ERROR, _ ("Create archive"), _ ("Select the files to pack."));
+            return FALSE;
+        }
+    }
 
     memset (&opts, 0, sizeof (opts));
     cols = MIN (MAX (cols, 64), COLS - 4);
@@ -583,14 +622,17 @@ archive_dialog (int cols)
     {
         GPtrArray *names;
 
-        names = archive_sources (panel);
+        vfs_path_t *src_dir;
+
+        names = archive_sources (panel, &src_dir);
         if (names->len != 0)
         {
-            archive_pack_run (&opts, panel->cwd_vpath, names, ret == B_ARCHIVE_BG);
+            archive_pack_run (&opts, src_dir, names, ret == B_ARCHIVE_BG);
             update_panels (UP_RELOAD, UP_KEEPSEL);
             repaint_screen ();
         }
         g_ptr_array_free (names, TRUE);
+        vfs_path_free (src_dir, TRUE);
     }
     archive_pack_opts_free (&opts);
 

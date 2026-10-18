@@ -69,7 +69,8 @@ typedef struct
 {
     file_op_context_t *ctx;
     struct archive *a;
-    vfs_path_t *target_vpath;  // shown as the target in the progress dialog
+    vfs_path_t *target_vpath;     // shown as the target in the progress dialog
+    const vfs_path_t *out_vpath;  // the archive being written, never packed into itself
     char *buf;
     gint64 tv_last;
 } pack_t;
@@ -401,6 +402,9 @@ pack_add (pack_t *p, const vfs_path_t *vpath, const char *name)
     struct archive_entry *entry;
     struct stat st;
 
+    if (vfs_path_equal (vpath, p->out_vpath))
+        return FILE_CONT;
+
     while (mc_lstat (vpath, &st) != 0)
     {
         status = file_error (ctx, TRUE, _ ("Cannot stat source file \"%s\"\n%s"),
@@ -556,6 +560,7 @@ pack_do (file_op_context_t *ctx, archive_pack_opts_t *o, const vfs_path_t *src_d
     memset (&p, 0, sizeof (p));
     p.ctx = ctx;
     p.target_vpath = final_vpath;
+    p.out_vpath = out.vpath;
     p.buf = g_malloc (PACK_BLOCK);
     p.a = archive_write_new ();
 

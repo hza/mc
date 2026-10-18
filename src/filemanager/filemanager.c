@@ -67,7 +67,8 @@
 #include "tree.h"
 #include "boxes.h"  // sort_box(), tree_box()
 #include "layout.h"
-#include "cmd.h"  // commands
+#include "archive-dialog.h"  // archive_dialog()
+#include "cmd.h"             // commands
 #include "hotlist.h"
 #include "panelize.h"
 #include "command.h"  // cmdline
@@ -219,6 +220,7 @@ create_file_menu (void)
     entries = g_list_prepend (entries, menu_entry_new (_ ("&Filtered view"), CK_ViewFiltered));
     entries = g_list_prepend (entries, menu_entry_new (_ ("&Edit"), CK_Edit));
     entries = g_list_prepend (entries, menu_entry_new (_ ("&Copy"), CK_Copy));
+    entries = g_list_prepend (entries, menu_entry_new (_ ("&Pack"), CK_Pack));
     entries = g_list_prepend (entries, menu_entry_new (_ ("C&hmod"), CK_ChangeMode));
     entries = g_list_prepend (entries, menu_entry_new (_ ("&Link"), CK_Link));
     entries = g_list_prepend (entries, menu_entry_new (_ ("&Symlink"), CK_LinkSymbolic));
@@ -1166,6 +1168,11 @@ midnight_execute_cmd (Widget *sender, long command)
         break;
     case CK_Copy:
         copy_cmd (current_panel);
+        break;
+    case CK_Pack:
+        // Copy (F5) in the Create archive dialog goes on to the Copy dialog
+        if (get_current_type () == view_listing && archive_dialog (MAX (COLS * 2 / 3, 68)))
+            copy_cmd (current_panel);
         break;
     case CK_PutCurrentPath:
         midnight_put_panel_path (current_panel);
