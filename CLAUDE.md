@@ -24,7 +24,28 @@ make -j8 check      # unit tests
 - Maintainer mode is off, so editing a `Makefile.am` does not regenerate anything. After
   adding a source or data file, run `automake <dir>/Makefile` and
   `./config.status <dir>/Makefile`.
-- Format C with `clang-format -i` (the repo has a `.clang-format`).
+- Format C with `clang-format -i` (the repo has a `.clang-format`), but only on files you
+  edit, and check `git diff`: it reflows untouched code in `lib/keybind.c` and the
+  `panels_layout` initializer in `layout.c`. Revert those hunks.
+
+## Trying mc from a script
+
+Use tmux (`/usr/local/bin/tmux`). Start mc like this:
+
+```sh
+D=<scratchpad>; mkdir -p $D/tmp $D/home
+tmux new-session -d -s t -x 100 -y 14 "env TERM=xterm-256color TMPDIR=$D/tmp MC_TMPDIR=$D/tmp \
+  XDG_CONFIG_HOME=$D/home/cfg XDG_DATA_HOME=$D/home/data XDG_CACHE_HOME=$D/home/cache \
+  ./src/mc -u <left dir> <right dir>"
+tmux send-keys -t t M-F1; tmux capture-pane -p -t t
+```
+
+- `TERM=xterm-256color`: the user's `xoria256` skin stops mc at an error dialog under plain
+  `xterm`.
+- `TMPDIR` and `MC_TMPDIR`: the sandbox blocks the system temp dir, and mc then waits at
+  "Cannot create temporary directory ... Press any key", ignoring every key you send.
+- The `XDG_*` dirs keep the test from overwriting the user's mc settings.
+- Type plain text first and check that it shows on the command line.
 
 ## Code map
 
