@@ -101,6 +101,24 @@ scheme cannot be loaded, the classic colors stay and the reason is shown under t
 re-highlights the file with that syntax right away, which helps when a file was detected
 as the wrong language. <kbd>Enter</kbd> keeps it, <kbd>Esc</kbd> restores the original.
 
+Two buttons under the list save the choice for files like this one, for example `.gitconfig`
+as *INI-based File*. Both show the file and the rules file of the syntax (`ini.syntax`), and
+take a name and a file name pattern written the way the `Syntax` file writes patterns.
+
+- **Add entry…** puts a new entry (*.gitconfig Files*) with the rules of the chosen syntax
+  after the comments at the top of the file. The pattern is prefilled with the file's
+  extension, or its name when it has none.
+- **Edit entry…** changes the name and the pattern of the chosen syntax's own entry. The
+  pattern is prefilled with the entry's one, plus this file's when it is not in it yet.
+
+<kbd>F4</kbd>, in the list or in these dialogs, opens the `Syntax` file in the editor instead.
+Changes go to `~/.local/share/mc/syntax/Syntax`, which is copied from the system one first
+if you have none; the editor and the viewer both use it from then on. Note that once you
+have your own copy, changes to the system `Syntax` file no longer reach you.
+
+**Options → Syntax file** in the editor works the same way: without your own copy it opens
+the system file under your own path, and the copy is made only when you save it.
+
 ## Windows (CRLF) line ends
 
 Upstream mcedit draws the CR of every Windows line end as `^M` and treats it as an

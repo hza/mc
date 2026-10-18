@@ -74,6 +74,10 @@ int syntax_load (syntax_t *syn, GPtrArray *pnames, const char *syntax_file, cons
 /* the colors of the rules stay allocated: they may be shared, see tty_color_free_temp() */
 void syntax_free (syntax_t *syn);
 int syntax_get_color (syntax_t *syn, off_t byte_index);
+char *syntax_name_pattern (const char *file_name);
+gboolean syntax_entry_get (const char *type, char **pattern, char **include);
+char *syntax_associate (const char *type, const char *pattern, const char *name);
+char *syntax_entry_edit (const char *type, const char *pattern, const char *name);
 
 /*** inline functions ****************************************************************************/
 

@@ -75,9 +75,9 @@ gboolean auto_syntax = TRUE;
 
 /*** file scope macro definitions ****************************************************************/
 
-#define MAX_ENTRY_LEN     40
-#define LIST_LINES        14
-#define N_DFLT_ENTRIES    2
+#define MAX_ENTRY_LEN  40
+#define LIST_LINES     14
+#define N_DFLT_ENTRIES 2
 
 /*** file scope type declarations ****************************************************************/
 
@@ -90,6 +90,20 @@ static WEdit *syntax_dialog_edit = NULL;
 static WListbox *syntax_dialog_list = NULL;
 static const GPtrArray *syntax_dialog_names = NULL;
 static gboolean syntax_dialog_previewed = FALSE;
+static gboolean syntax_dialog_edit_file = FALSE;
+
+/* the colors of a listbox window, with hotkeys on the buttons that show */
+static const dlg_colors_t syntax_dialog_colors = {
+    [DLG_COLOR_NORMAL] = PMENU_ENTRY_COLOR,
+    [DLG_COLOR_FOCUS] = PMENU_SELECTED_COLOR,
+    [DLG_COLOR_HOT_NORMAL] = MENU_HOT_COLOR,
+    [DLG_COLOR_HOT_FOCUS] = MENU_HOTSEL_COLOR,
+    [DLG_COLOR_SELECTED_NORMAL] = PMENU_SELECTED_COLOR,
+    [DLG_COLOR_SELECTED_FOCUS] = PMENU_SELECTED_COLOR,
+    [DLG_COLOR_TITLE] = PMENU_TITLE_COLOR,
+    [DLG_COLOR_FRAME] = PMENU_FRAME_COLOR,
+};
+static gboolean syntax_dialog_associated = FALSE;
 
 /* --------------------------------------------------------------------------------------------- */
 /*** file scope functions ************************************************************************/
@@ -192,7 +206,186 @@ syntax_dialog_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, v
         return MSG_HANDLED;
     }
 
+    if (msg == MSG_UNHANDLED_KEY && parm == KEY_F (4))
+    {
+        syntax_dialog_edit_file = TRUE;
+        DIALOG (w)->ret_value = B_CANCEL;
+        dlg_close (DIALOG (w));
+        return MSG_HANDLED;
+    }
+
     return dlg_default_callback (w, sender, msg, parm, data);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* F4 in the Associate dialog: Edit Syntax file */
+static cb_ret_t
+syntax_associate_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
+{
+    if (msg == MSG_UNHANDLED_KEY && parm == KEY_F (4))
+    {
+        DIALOG (w)->ret_value = B_USER;
+        dlg_close (DIALOG (w));
+        return MSG_HANDLED;
+    }
+
+    return dlg_default_callback (w, sender, msg, parm, data);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Ask for the entry of the syntax @name to change, or for a new entry with its rules that makes
+ * files like the edited one use it, and save it.
+ *
+ * @return TRUE when it was saved, or when the Syntax file is to be edited instead
+ */
+
+static gboolean
+syntax_entry_dialog (WEdit *edit, const char *name, gboolean edit_entry)
+{
+    const char *file_name;
+    char *file_pattern, *entry_pattern, *include, *def, *def_name;
+    char *pattern = NULL, *new_name = NULL, *file_label, *include_label, *title;
+    gboolean done = FALSE;
+
+    if (edit->filename_vpath == NULL)
+    {
+        message (D_ERROR, MSG_ERROR, _ ("Save the file first"));
+        return FALSE;
+    }
+    if (!syntax_entry_get (name, &entry_pattern, &include))
+    {
+        message (D_ERROR, MSG_ERROR, _ ("No syntax \"%s\" in the Syntax file"), name);
+        return FALSE;
+    }
+
+    file_name = vfs_path_as_str (edit->filename_vpath);
+    file_pattern = syntax_name_pattern (file_name);
+    if (!edit_entry)
+    {
+        def = file_pattern;
+        def_name = g_strdup_printf (_ ("%s Files"), x_basename (file_name));
+        title = g_strdup_printf (_ ("Add entry like \"%s\""), name);
+    }
+    else
+    {
+        // offer this file too, unless the pattern has it already
+        def = strstr (entry_pattern, file_pattern) != NULL
+            ? g_strdup (entry_pattern)
+            : g_strdup_printf ("%s|%s", entry_pattern, file_pattern);
+        g_free (file_pattern);
+        def_name = g_strdup (name);
+        title = g_strdup_printf (_ ("Edit entry \"%s\""), name);
+    }
+    file_label = g_strdup_printf (_ ("File: %s"), str_trunc (file_name, 50));
+    include_label =
+        g_strdup_printf (_ ("Syntax file: %s"), include != NULL ? include : _ ("(inline rules)"));
+
+    while (!done)
+    {
+        int result;
+        char *error;
+
+        {
+            quick_widget_t quick_widgets[] = {
+                // clang-format off
+                QUICK_LABEL (file_label, NULL),
+                QUICK_LABEL (include_label, NULL),
+                QUICK_LABELED_INPUT (edit_entry ? _ ("Name:") : _ ("Name of the new entry:"),
+                                     input_label_above, def_name, "mc.edit.syntax-entry-name",
+                                     &new_name, NULL, FALSE, FALSE, INPUT_COMPLETE_NONE),
+                QUICK_LABELED_INPUT (_ ("File name pattern, as written in the Syntax file:"),
+                                     input_label_above, def, "mc.edit.syntax-entry-pattern",
+                                     &pattern, NULL, FALSE, FALSE, INPUT_COMPLETE_NONE),
+                QUICK_START_BUTTONS (TRUE, TRUE),
+                    QUICK_BUTTON (_ ("&OK"), B_ENTER, NULL, NULL),
+                    QUICK_BUTTON (_ ("&Edit Syntax file (F4)"), B_USER, NULL, NULL),
+                    QUICK_BUTTON (_ ("&Cancel"), B_CANCEL, NULL, NULL),
+                QUICK_END,
+                // clang-format on
+            };
+
+            WRect r = { -1, -1, 0, 64 };
+
+            quick_dialog_t qdlg = {
+                .rect = r,
+                .title = title,
+                .help = "[Input Line Keys]",
+                .widgets = quick_widgets,
+                .callback = syntax_associate_callback,
+                .mouse_callback = NULL,
+            };
+
+            result = quick_dialog (&qdlg);
+        }
+
+        if (result == B_CANCEL)
+            break;
+
+        if (result == B_USER)
+        {
+            syntax_dialog_edit_file = TRUE;
+            done = TRUE;
+            break;
+        }
+
+        g_strstrip (new_name);
+        error = edit_entry ? syntax_entry_edit (name, pattern, new_name)
+                           : syntax_associate (name, pattern, new_name);
+        if (error == NULL)
+        {
+            syntax_dialog_associated = TRUE;
+            done = TRUE;
+        }
+        else
+        {
+            message (D_ERROR, title, "%s", error);
+            g_free (error);
+            // offer what was typed again
+            g_free (def);
+            def = pattern;
+            pattern = NULL;
+            g_free (def_name);
+            def_name = new_name;
+            new_name = NULL;
+        }
+    }
+
+    g_free (pattern);
+    g_free (new_name);
+    g_free (def);
+    g_free (def_name);
+    g_free (entry_pattern);
+    g_free (include);
+    g_free (title);
+    g_free (file_label);
+    g_free (include_label);
+
+    return done;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* the Add entry and Edit entry buttons: close the dialog when the Syntax file was changed */
+static int
+syntax_entry_button_cb (WButton *button, int action)
+{
+    int current = syntax_dialog_list->current;
+
+    (void) button;
+
+    if (current < N_DFLT_ENTRIES)
+    {
+        message (D_ERROR, MSG_ERROR, _ ("Choose a syntax first"));
+        return 0;
+    }
+
+    return syntax_entry_dialog (syntax_dialog_edit,
+                                g_ptr_array_index (syntax_dialog_names, current - N_DFLT_ENTRIES),
+                                action == B_USER + 1)
+        ? 1
+        : 0;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -202,10 +395,12 @@ exec_edit_syntax_dialog (WEdit *edit, const GPtrArray *names, const char *curren
 {
     size_t i;
     Listbox *syntaxlist;
-    int n;
+    WButton *add, *change;
+    WRect r;
+    int n, x, y;
 
     syntaxlist =
-        listbox_window_new (LIST_LINES, MAX_ENTRY_LEN, _ ("Choose syntax highlighting"), NULL);
+        listbox_window_new (LIST_LINES + 2, MAX_ENTRY_LEN, _ ("Choose syntax highlighting"), NULL);
     LISTBOX_APPEND_TEXT (syntaxlist, 'A', _ ("< Auto >"), NULL, FALSE);
     LISTBOX_APPEND_TEXT (syntaxlist, 'R', _ ("< Reload Current Syntax >"), NULL, FALSE);
 
@@ -224,6 +419,27 @@ exec_edit_syntax_dialog (WEdit *edit, const GPtrArray *names, const char *curren
     syntax_dialog_names = names;
     syntax_dialog_previewed = FALSE;
     WIDGET (syntaxlist->dlg)->callback = syntax_dialog_callback;
+
+    // make room for the buttons under the list
+    r = WIDGET (syntaxlist->list)->rect;
+    r.lines -= 2;
+    widget_set_size_rect (WIDGET (syntaxlist->list), &r);
+    add = button_new (0, 0, B_USER, NORMAL_BUTTON, _ ("&Add entry..."), syntax_entry_button_cb);
+    change =
+        button_new (0, 0, B_USER + 1, NORMAL_BUTTON, _ ("&Edit entry..."), syntax_entry_button_cb);
+    y = r.y - WIDGET (syntaxlist->dlg)->rect.y + r.lines + 1;
+    x = (WIDGET (syntaxlist->dlg)->rect.cols - WIDGET (add)->rect.cols - 1
+         - WIDGET (change)->rect.cols)
+        / 2;
+    WIDGET (add)->rect.y = WIDGET (change)->rect.y = y;
+    WIDGET (add)->rect.x = x;
+    WIDGET (change)->rect.x = x + WIDGET (add)->rect.cols + 1;
+    // before the list, so that their hotkeys win over the one of < Auto >
+    group_add_widget_before (GROUP (syntaxlist->dlg), add, syntaxlist->list);
+    group_add_widget_before (GROUP (syntaxlist->dlg), change, syntaxlist->list);
+    group_add_widget (GROUP (syntaxlist->dlg), hline_new (y - 1, -1, -1));
+    syntaxlist->dlg->colors = syntax_dialog_colors;
+    widget_select (WIDGET (syntaxlist->list));
 
     n = listbox_run (syntaxlist);
 
@@ -400,8 +616,12 @@ edit_syntax_dialog (WEdit *edit)
     saved_syntax = g_strdup (edit->syntax_type);
     saved_auto_syntax = auto_syntax;
 
+    syntax_dialog_edit_file = FALSE;
+    syntax_dialog_associated = FALSE;
     syntax = exec_edit_syntax_dialog (edit, names, edit->syntax_type);
-    if (syntax >= 0)
+    if (syntax_dialog_associated)
+        syntax_apply (edit, names, 0);  // the new entry is found as Auto
+    else if (syntax >= 0 && !syntax_dialog_edit_file)
         syntax_apply (edit, names, syntax);
     else if (syntax_dialog_previewed)
     {
@@ -415,6 +635,9 @@ edit_syntax_dialog (WEdit *edit)
 
     g_free (saved_syntax);
     g_ptr_array_free (names, TRUE);
+
+    if (syntax_dialog_edit_file)
+        edit_load_syntax_file (DIALOG (WIDGET (edit)->owner));
 }
 
 /* --------------------------------------------------------------------------------------------- */

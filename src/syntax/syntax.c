@@ -1708,6 +1708,208 @@ read_syntax_file (syntax_t *syn, GPtrArray *pnames, const char *syntax_file, con
     return result;
 }
 /* --------------------------------------------------------------------------------------------- */
+/**
+ * Read the Syntax file in use: the user's one, or the system one when the user has none.
+ * @return its lines, or NULL when neither can be read
+ */
+
+static char **
+syntax_file_read_lines (void)
+{
+    char *path, *contents = NULL;
+    char **lines;
+
+    path = mc_config_get_full_path (EDIT_SYNTAX_FILE);
+    if (path == NULL || !g_file_get_contents (path, &contents, NULL, NULL))
+    {
+        g_free (path);
+        path = g_build_filename (mc_global.share_data_dir, EDIT_SYNTAX_FILE, (char *) NULL);
+        if (!g_file_get_contents (path, &contents, NULL, NULL))
+            contents = NULL;
+    }
+    g_free (path);
+
+    if (contents == NULL)
+        return NULL;
+
+    lines = g_strsplit (contents, "\n", -1);
+    g_free (contents);
+    return lines;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Field @n of the line @l as it is written in the file.
+ * @return its start, with its length in @len, or NULL when the line is shorter
+ */
+
+static const char *
+syntax_line_field (const char *l, int n, size_t *len)
+{
+    while (TRUE)
+    {
+        const char *e;
+
+        while (*l != '\0' && whiteness (*l))
+            l++;
+        if (*l == '\0')
+            return NULL;
+        for (e = l; *e != '\0' && !whiteness (*e); e++)
+            ;
+        if (n-- == 0)
+        {
+            *len = (size_t) (e - l);
+            return l;
+        }
+        l = e;
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static gboolean
+syntax_line_is_word (const char *l, const char *word)
+{
+    const char *p;
+    size_t len;
+
+    p = syntax_line_field (l, 0, &len);
+    return p != NULL && len == strlen (word) && strncmp (p, word, len) == 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* is @l the 'file' line of the syntax @type, or of any syntax when @type is NULL? */
+static gboolean
+syntax_line_is_entry (const char *l, const char *type)
+{
+    const char *p;
+    size_t len;
+    char *name;
+    gboolean ret;
+
+    if (!syntax_line_is_word (l, "file"))
+        return FALSE;
+    if (type == NULL)
+        return TRUE;
+
+    p = syntax_line_field (l, 2, &len);
+    if (p == NULL)
+        return FALSE;
+    name = g_strndup (p, len);
+    ret = strcmp (convert (name), type) == 0;
+    g_free (name);
+    return ret;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* write @c the way convert() reads it back */
+static void
+syntax_escape_char (GString *s, char c)
+{
+    switch (c)
+    {
+    case ' ':
+        g_string_append (s, "\\s");
+        break;
+    case '\t':
+        g_string_append (s, "\\t");
+        break;
+    case '\\':
+    case '*':
+    case '+':
+        g_string_append_c (s, '\\');
+        g_string_append_c (s, c);
+        break;
+    default:
+        g_string_append_c (s, c);
+        break;
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* NULL when @pattern and @name can make an entry, or the error message */
+static char *
+syntax_check_entry (const char *pattern, const char *name)
+{
+    char *test;
+    size_t len;
+    GRegex *re;
+    GError *error = NULL;
+
+    if (name[0] == '\0')
+        return g_strdup (_ ("Give the entry a name"));
+    if (pattern[0] == '\0' || syntax_line_field (pattern, 1, &len) != NULL)
+        return g_strdup (_ ("The pattern must be one word: write a space as \\s"));
+
+    test = g_strdup (pattern);
+    re = g_regex_new (convert (test), 0, 0, &error);
+    g_free (test);
+    if (re == NULL)
+    {
+        char *msg;
+
+        msg = g_strdup_printf (_ ("Bad pattern:\n%s"), error->message);
+        g_error_free (error);
+        return msg;
+    }
+    g_regex_unref (re);
+    return NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* the 'file' line of an entry: @pattern and @name as written in the file, then @rest */
+static char *
+syntax_entry_line (const char *pattern, const char *name, const char *rest)
+{
+    GString *s;
+
+    s = g_string_new ("file ");
+    g_string_append (s, pattern);
+    g_string_append_c (s, ' ');
+    for (; *name != '\0'; name++)
+        syntax_escape_char (s, *name);
+    g_string_append (s, rest);
+    return g_string_free (s, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Write @lines, free'd here, to the user's Syntax file.
+ * @return NULL, or the error message
+ */
+
+static char *
+syntax_file_write_lines (char **lines)
+{
+    char *path, *dir, *tmp_path, *data, *msg = NULL;
+    FILE *f;
+    gboolean ok;
+
+    data = g_strjoinv ("\n", lines);
+    g_strfreev (lines);
+
+    path = mc_config_get_full_path (EDIT_SYNTAX_FILE);
+    dir = g_path_get_dirname (path);
+    (void) g_mkdir_with_parents (dir, 0700);
+    g_free (dir);
+
+    f = mc_util_replace_begin (path, &tmp_path);
+    ok = f != NULL;
+    if (ok)
+        ok = mc_util_replace_end (f, tmp_path, path, fputs (data, f) >= 0);
+    g_free (data);
+
+    if (!ok)
+        msg = g_strdup_printf (_ ("Cannot write %s:\n%s"), path, unix_error_string (errno));
+    g_free (path);
+    return msg;
+}
+
+/* --------------------------------------------------------------------------------------------- */
 /*** public functions ****************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
 
@@ -1779,6 +1981,189 @@ syntax_get_color (syntax_t *syn, off_t byte_index)
     else
         get_rule (syn, byte_index);
     return translate_rule_to_color (syn, &syn->rule);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * A file name pattern for the Syntax file that matches files like @file_name: its extension,
+ * or its whole name when it has none, as written in the file.
+ */
+
+char *
+syntax_name_pattern (const char *file_name)
+{
+    const char *base, *dot, *p;
+    GString *s;
+
+    base = strrchr (file_name, PATH_SEP);
+    base = base == NULL ? file_name : base + 1;
+    dot = strrchr (base, '.');
+
+    s = g_string_new (NULL);
+    if (dot != NULL && dot != base)
+        p = dot;
+    else
+    {
+        g_string_append (s, "/");
+        p = base;
+    }
+
+    for (; *p != '\0'; p++)
+    {
+        // a regex escape, then the file's own escape of the character
+        if (strchr (".^$|()[]{}?+*\\", *p) != NULL)
+            g_string_append (s, "\\\\");
+        syntax_escape_char (s, *p);
+    }
+    g_string_append_c (s, '$');
+
+    return g_string_free (s, FALSE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * The entry of the syntax @type: its file name pattern as written in the Syntax file, and the
+ * file its rules are included from, or NULL when they are written inline.
+ *
+ * @return FALSE when there is no such entry; the results are free'd by the caller
+ */
+
+gboolean
+syntax_entry_get (const char *type, char **pattern, char **include)
+{
+    char **lines;
+    const char *p;
+    size_t len;
+    int i;
+
+    *pattern = NULL;
+    *include = NULL;
+
+    lines = syntax_file_read_lines ();
+    if (lines == NULL)
+        return FALSE;
+
+    for (i = 0; lines[i] != NULL; i++)
+        if (syntax_line_is_entry (lines[i], type))
+        {
+            p = syntax_line_field (lines[i], 1, &len);
+            *pattern = g_strndup (p, len);
+            if (lines[i + 1] != NULL && syntax_line_is_word (lines[i + 1], "include")
+                && (p = syntax_line_field (lines[i + 1], 1, &len)) != NULL)
+                *include = g_strndup (p, len);
+            break;
+        }
+
+    g_strfreev (lines);
+    return *pattern != NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Add the entry @name for files matching @pattern, with the rules of the syntax @type, after the
+ * comments at the top of the user's Syntax file, which is made from the system one when the
+ * user has none.
+ *
+ * @param pattern a file name pattern as written in the Syntax file
+ * @return NULL, or the error message; free'd by the caller
+ */
+
+char *
+syntax_associate (const char *type, const char *pattern, const char *name)
+{
+    char **lines;
+    char *msg, *rest;
+    const char *p, *inc = NULL;
+    size_t len, inc_len = 0;
+    int i, top = -1;
+
+    msg = syntax_check_entry (pattern, name);
+    if (msg != NULL)
+        return msg;
+
+    lines = syntax_file_read_lines ();
+    if (lines == NULL)
+        return g_strdup (_ ("Cannot read the Syntax file"));
+
+    for (i = 0; lines[i] != NULL; i++)
+    {
+        p = syntax_line_field (lines[i], 0, &len);
+        if (top < 0 && p != NULL && *p != '#')
+            top = i;
+        if (syntax_line_is_entry (lines[i], name))
+        {
+            g_strfreev (lines);
+            return g_strdup_printf (_ ("There is a syntax \"%s\" already"), name);
+        }
+        // the rules of @type: the include right after its entry
+        if (inc == NULL && syntax_line_is_entry (lines[i], type) && lines[i + 1] != NULL
+            && syntax_line_is_word (lines[i + 1], "include"))
+            inc = syntax_line_field (lines[i + 1], 1, &inc_len);
+    }
+    if (inc == NULL || top < 0)
+    {
+        g_strfreev (lines);
+        return g_strdup_printf (_ ("No include file for \"%s\" in the Syntax file"), type);
+    }
+
+    rest = g_strdup_printf ("\ninclude %.*s\n\n%s", (int) inc_len, inc, lines[top]);
+    g_free (lines[top]);
+    lines[top] = syntax_entry_line (pattern, name, rest);
+    g_free (rest);
+
+    return syntax_file_write_lines (lines);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Give the entry of the syntax @type the file name @pattern and the @name, in the user's Syntax
+ * file, which is made from the system one when the user has none.  Its first line pattern and
+ * its rules stay.
+ *
+ * @param pattern a file name pattern as written in the Syntax file
+ * @return NULL, or the error message; free'd by the caller
+ */
+
+char *
+syntax_entry_edit (const char *type, const char *pattern, const char *name)
+{
+    char **lines;
+    char *msg, *l;
+    const char *p;
+    size_t len;
+    int i, entry = -1;
+
+    msg = syntax_check_entry (pattern, name);
+    if (msg != NULL)
+        return msg;
+
+    lines = syntax_file_read_lines ();
+    if (lines == NULL)
+        return g_strdup (_ ("Cannot read the Syntax file"));
+
+    for (i = 0; lines[i] != NULL; i++)
+        if (entry < 0 && syntax_line_is_entry (lines[i], type))
+            entry = i;
+        else if (strcmp (name, type) != 0 && syntax_line_is_entry (lines[i], name))
+        {
+            g_strfreev (lines);
+            return g_strdup_printf (_ ("There is a syntax \"%s\" already"), name);
+        }
+    if (entry < 0)
+    {
+        g_strfreev (lines);
+        return g_strdup_printf (_ ("No syntax \"%s\" in the Syntax file"), type);
+    }
+
+    // keep what follows the name: the first line pattern
+    p = syntax_line_field (lines[entry], 2, &len);
+    l = syntax_entry_line (pattern, name, p + len);
+    g_free (lines[entry]);
+    lines[entry] = l;
+
+    return syntax_file_write_lines (lines);
 }
 
 /* --------------------------------------------------------------------------------------------- */

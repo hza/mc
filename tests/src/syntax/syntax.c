@@ -26,6 +26,9 @@
 
 #include <glib/gstdio.h>
 
+#include "lib/fileloc.h"
+#include "lib/mcconfig.h"
+
 #include "src/syntax/syntax.h"
 
 /* explicit colors everywhere, so that no skin is needed */
@@ -234,6 +237,219 @@ END_TEST
 
 /* --------------------------------------------------------------------------------------------- */
 
+static const char assoc_syntax[] = "# comment\n"
+                                   "\n"
+                                   "file ..\\*\\\\.ini$ INI-based\\sFile ^\\[\n"
+                                   "include ini.syntax\n"
+                                   "\n"
+                                   "file .\\* Inline\n"
+                                   "context default lightgray black\n";
+
+static char *assoc_share, *assoc_home, *assoc_system, *assoc_user;
+
+/* a system share dir with a Syntax file, and an empty user data dir */
+static void
+assoc_setup (void)
+{
+    char *dir, *inc;
+
+    assoc_share = g_dir_make_tmp ("mc-share-XXXXXX", NULL);
+    assoc_home = g_dir_make_tmp ("mc-home-XXXXXX", NULL);
+    dir = g_build_filename (assoc_share, EDIT_SYNTAX_DIR, (char *) NULL);
+    g_mkdir_with_parents (dir, 0700);
+    assoc_system = g_build_filename (assoc_share, EDIT_SYNTAX_FILE, (char *) NULL);
+    g_file_set_contents (assoc_system, assoc_syntax, -1, NULL);
+    inc = g_build_filename (dir, "ini.syntax", (char *) NULL);
+    g_file_set_contents (inc, "context default lightgray black\n", -1, NULL);
+    g_free (inc);
+    g_free (dir);
+
+    mc_global.share_data_dir = assoc_share;
+    g_setenv ("XDG_DATA_HOME", assoc_home, TRUE);
+    assoc_user = mc_config_get_full_path (EDIT_SYNTAX_FILE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static char *
+read_file (const char *path)
+{
+    char *s = NULL;
+
+    ck_assert (g_file_get_contents (path, &s, NULL, NULL));
+    return s;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static char *
+find_type (const char *file_name)
+{
+    syntax_t syn;
+    char *type_found = NULL, *error_file = NULL;
+    int r;
+
+    memset (&syn, 0, sizeof (syn));
+    syn.get_byte = get_text_byte;
+    syn.data = text;
+    syn.normal_color = 1;
+    syn.skin_group = "editor";
+    r = syntax_load (&syn, NULL, assoc_user, file_name, "", NULL, &type_found, &error_file);
+    ck_assert_int_eq (r, 0);
+    syntax_free (&syn);
+    g_free (error_file);
+    return type_found;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+START_TEST (test_name_pattern)
+{
+    char *p;
+
+    p = syntax_name_pattern ("/home/u/.gitconfig");
+    mctest_assert_str_eq (p, "/\\\\.gitconfig$");
+    g_free (p);
+    p = syntax_name_pattern ("/a.b/x.c++");
+    mctest_assert_str_eq (p, "\\\\.c\\\\\\+\\\\\\+$");
+    g_free (p);
+    p = syntax_name_pattern ("Makefile");
+    mctest_assert_str_eq (p, "/Makefile$");
+    g_free (p);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* a new entry goes before all others, with the include of the syntax */
+START_TEST (test_associate_new_entry)
+{
+    char *error, *s;
+
+    assoc_setup ();
+
+    error = syntax_associate ("INI-based File", "/\\\\.gitconfig$", ".gitconfig Files");
+    mctest_assert_null (error);
+
+    s = read_file (assoc_user);
+    mctest_assert_str_eq (s,
+                          "# comment\n"
+                          "\n"
+                          "file /\\\\.gitconfig$ .gitconfig\\sFiles\n"
+                          "include ini.syntax\n"
+                          "\n"
+                          "file ..\\*\\\\.ini$ INI-based\\sFile ^\\[\n"
+                          "include ini.syntax\n"
+                          "\n"
+                          "file .\\* Inline\n"
+                          "context default lightgray black\n");
+    g_free (s);
+    s = read_file (assoc_system);
+    mctest_assert_str_eq (s, assoc_syntax);
+    g_free (s);
+
+    s = find_type ("/home/u/.gitconfig");
+    mctest_assert_str_eq (s, ".gitconfig Files");
+    g_free (s);
+    s = find_type ("/home/u/a.ini");
+    mctest_assert_str_eq (s, "INI-based File");
+    g_free (s);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
+START_TEST (test_associate_errors)
+{
+    const char *bad[][3] = {
+        { "INI-based File", "(", "New" },     // bad regex
+        { "INI-based File", "a b", "New" },   // not one word
+        { "INI-based File", "x", "" },        // no name
+        { "INI-based File", "x", "Inline" },  // a name of its own
+        { "Missing", "x", "New" },            // no such syntax
+        { "Inline", "x", "New" },             // its rules are inline: nothing to include
+    };
+    size_t i;
+
+    assoc_setup ();
+
+    for (i = 0; i < G_N_ELEMENTS (bad); i++)
+    {
+        char *error;
+
+        error = syntax_associate (bad[i][0], bad[i][1], bad[i][2]);
+        mctest_assert_not_null (error);
+        g_free (error);
+    }
+
+    ck_assert (!g_file_test (assoc_user, G_FILE_TEST_EXISTS));
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
+START_TEST (test_entry_get)
+{
+    char *pattern, *include;
+
+    assoc_setup ();
+
+    ck_assert (syntax_entry_get ("INI-based File", &pattern, &include));
+    mctest_assert_str_eq (pattern, "..\\*\\\\.ini$");
+    mctest_assert_str_eq (include, "ini.syntax");
+    g_free (pattern);
+    g_free (include);
+
+    ck_assert (syntax_entry_get ("Inline", &pattern, &include));
+    mctest_assert_str_eq (pattern, ".\\*");
+    mctest_assert_null (include);
+    g_free (pattern);
+
+    ck_assert (!syntax_entry_get ("Missing", &pattern, &include));
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* editing an entry keeps its first line pattern and rules */
+START_TEST (test_entry_edit)
+{
+    char *error, *s;
+
+    assoc_setup ();
+
+    error = syntax_entry_edit ("INI-based File", "..\\*\\\\.ini$|/\\\\.gitconfig$", "INI Files");
+    mctest_assert_null (error);
+
+    s = read_file (assoc_user);
+    mctest_assert_not_null (strstr (
+        s, "\nfile ..\\*\\\\.ini$|/\\\\.gitconfig$ INI\\sFiles ^\\[\ninclude ini.syntax\n"));
+    g_free (s);
+    s = read_file (assoc_system);
+    mctest_assert_str_eq (s, assoc_syntax);
+    g_free (s);
+
+    s = find_type ("/home/u/.gitconfig");
+    mctest_assert_str_eq (s, "INI Files");
+    g_free (s);
+
+    // the same name, or a name of its own
+    error = syntax_entry_edit ("INI Files", "\\\\.ini$", "INI Files");
+    mctest_assert_null (error);
+    error = syntax_entry_edit ("INI Files", "\\\\.ini$", "Inline");
+    mctest_assert_not_null (error);
+    g_free (error);
+    error = syntax_entry_edit ("INI Files", "(", "INI Files");
+    mctest_assert_not_null (error);
+    g_free (error);
+    error = syntax_entry_edit ("Missing", "x", "New");
+    mctest_assert_not_null (error);
+    g_free (error);
+}
+END_TEST
+
+/* --------------------------------------------------------------------------------------------- */
+
 int
 main (void)
 {
@@ -246,6 +462,11 @@ main (void)
     // Add new tests here: ***************
     tcase_add_test (tc_core, test_fixed_random_access);
     tcase_add_test (tc_core, test_fixed_sync_window);
+    tcase_add_test (tc_core, test_name_pattern);
+    tcase_add_test (tc_core, test_associate_new_entry);
+    tcase_add_test (tc_core, test_associate_errors);
+    tcase_add_test (tc_core, test_entry_get);
+    tcase_add_test (tc_core, test_entry_edit);
     // ***********************************
 
     return mctest_run_all (tc_core);
