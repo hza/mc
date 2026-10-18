@@ -140,6 +140,7 @@ typedef struct
 {
     off_t offset;
     syntax_rule_t rule;
+    gboolean guessed;  // walked from a guess, see get_rule_fixed()
 } syntax_marker_t;
 
 /*** forward declarations (file scope functions) *************************************************/
@@ -817,35 +818,41 @@ sync_point (const syntax_t *syn, off_t byte_index, off_t limit)
 
 /* --------------------------------------------------------------------------------------------- */
 
-/** get_rule() for text that does not change: saved states are kept and jumped to. */
+/**
+ * get_rule() for text that does not change: saved states are kept and jumped to.
+ *
+ * Past sync_window bytes from a saved state, the walk starts afresh at a line start: a guess,
+ * wrong inside a comment or string cut by that line start, and in the rest of it.  Most of
+ * these end within a few lines, so states a little past the guess are kept, as guesses.
+ */
 
 static void
 get_rule_fixed (syntax_t *syn, off_t byte_index)
 {
     const off_t density =
         syn->checkpoint_density > 0 ? syn->checkpoint_density : SYNTAX_MARKER_DENSITY;
+    // how far past a fresh start a state is good enough to keep
+    const off_t warmup = syn->sync_window / 16;
     gssize c;
-    gboolean ahead;
     off_t i, from;
 
     if (syn->checkpoints == NULL)
         syn->checkpoints = g_array_new (FALSE, FALSE, sizeof (syntax_marker_t));
 
     c = find_checkpoint (syn->checkpoints, byte_index);
-    // no saved state between where we are and where we go
-    ahead = byte_index > syn->last_get_rule
-        && (c < 0 || g_array_index (syn->checkpoints, syntax_marker_t, c).offset <= syn->last_get_rule);
 
-    // walk on from where we are; a guess is not walked on too far
-    if (ahead && (!syn->guessed || byte_index - syn->last_get_rule <= syn->sync_window))
-        from = syn->last_get_rule;
+    if (byte_index > syn->last_get_rule
+        && (c < 0
+            || g_array_index (syn->checkpoints, syntax_marker_t, c).offset <= syn->last_get_rule))
+        from = syn->last_get_rule;  // no saved state on the way: walk on from where we are
     else if (c >= 0)
     {
         const syntax_marker_t *s = &g_array_index (syn->checkpoints, syntax_marker_t, c);
 
         from = s->offset;
         syn->rule = s->rule;
-        syn->guessed = FALSE;
+        syn->guessed = s->guessed;
+        syn->guess_start = s->offset - warmup;
     }
     else
     {
@@ -854,26 +861,26 @@ get_rule_fixed (syntax_t *syn, off_t byte_index)
         syn->guessed = FALSE;
     }
 
-    if (!syn->guessed && syn->sync_window > 0 && byte_index - from > syn->sync_window)
+    if (syn->sync_window > 0 && byte_index - from > syn->sync_window)
     {
-        // too far to walk: the state at the line start before the window is a guess
+        // too far to walk: guess the state at the line start before the window
         from = sync_point (syn, byte_index - syn->sync_window, syn->sync_window) - 1;
         memset (&syn->rule, 0, sizeof (syn->rule));
         syn->guessed = TRUE;
+        syn->guess_start = from;
     }
 
     for (i = from + 1; i <= byte_index; i++)
     {
         apply_rules_going_right (syn, i);
 
-        // a guessed state may be wrong: only keep states known to be right
-        if (!syn->guessed && i % density == 0)
+        // keep the states sorted and one per stretch of density bytes
+        if (i % density == 0 && (!syn->guessed || i - syn->guess_start >= warmup))
         {
-            // keep the states sorted and one per stretch of density bytes
             c = find_checkpoint (syn->checkpoints, i);
             if (c < 0 || g_array_index (syn->checkpoints, syntax_marker_t, c).offset != i)
             {
-                syntax_marker_t s = { .offset = i, .rule = syn->rule };
+                syntax_marker_t s = { .offset = i, .rule = syn->rule, .guessed = syn->guessed };
 
                 g_array_insert_val (syn->checkpoints, (guint) (c + 1), s);
             }
@@ -1758,7 +1765,6 @@ syntax_free (syntax_t *syn)
         syn->checkpoints = NULL;
     }
     syn->guessed = FALSE;
-    tty_color_free_temp ();
 }
 
 /* --------------------------------------------------------------------------------------------- */

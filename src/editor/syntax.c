@@ -349,9 +349,13 @@ edit_free_syntax_rules (WEdit *edit)
         return;
 
     if (edit->syntax.rules != NULL)
+    {
         MC_PTR_FREE (edit->syntax_type);
-
-    syntax_free (&edit->syntax);
+        syntax_free (&edit->syntax);
+        tty_color_free_temp ();
+    }
+    else
+        syntax_free (&edit->syntax);
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -407,6 +411,7 @@ edit_load_syntax (WEdit *edit, GPtrArray *pnames, const char *type)
             // a syntax without rules is turned off for speed
             MC_PTR_FREE (edit->syntax_type);
             g_free (type_found);
+            tty_color_free_temp ();
         }
         else if (type_found != NULL)
         {

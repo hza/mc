@@ -50,8 +50,8 @@ typedef struct
     gboolean fixed;
     off_t checkpoint_density;
     /* With fixed text, never walk more than this many bytes to an offset: start afresh at
-       a line start instead, at the price of a wrong color where a long comment or string
-       began before it.  0 means always walk from the start of the text. */
+       a line start instead, at the price of a wrong color where a comment or string began
+       before it.  0 means always walk from the start of the text. */
     off_t sync_window;
 
     GPtrArray *rules;
@@ -59,7 +59,8 @@ typedef struct
     off_t last_get_rule;
     GSList *marker;                // saved states, last first
     GArray *checkpoints;           // saved states of fixed text, by offset
-    gboolean guessed;              // the state at last_get_rule comes from a sync point
+    gboolean guessed;              // the state at last_get_rule was walked from a guess
+    off_t guess_start;             // where that walk started
     GTree *defines;                // List of defines
     gboolean is_case_insensitive;  // selects language case sensitivity
 } syntax_t;
@@ -70,6 +71,7 @@ typedef struct
 
 int syntax_load (syntax_t *syn, GPtrArray *pnames, const char *syntax_file, const char *file_name,
                  const char *first_line, const char *type, char **type_found, char **error_file);
+/* the colors of the rules stay allocated: they may be shared, see tty_color_free_temp() */
 void syntax_free (syntax_t *syn);
 int syntax_get_color (syntax_t *syn, off_t byte_index);
 
