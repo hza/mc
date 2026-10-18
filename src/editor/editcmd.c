@@ -1203,9 +1203,26 @@ edit_load_syntax_file (WDialog *h)
 
         if (editcmd_check_and_create_user_syntax_directory (user_syntax_file_vpath))
         {
-            check_for_default (extdir_vpath, user_syntax_file_vpath);
-            edit_arg_init (&arg, user_syntax_file_vpath, 0);
-            ret = edit_load_file_from_filename (h, &arg);
+            if (exist_file (vfs_path_as_str (user_syntax_file_vpath)))
+            {
+                edit_arg_init (&arg, user_syntax_file_vpath, 0);
+                ret = edit_load_file_from_filename (h, &arg);
+            }
+            else
+            {
+                // show the system file, and make the user's own only when it is saved
+                edit_arg_init (&arg, extdir_vpath, 0);
+                ret = edit_load_file_from_filename (h, &arg);
+                if (ret)
+                {
+                    WEdit *edit;
+
+                    edit = edit_find_editor (h);
+                    if (edit != NULL && edit->filename_vpath != NULL
+                        && vfs_path_equal (edit->filename_vpath, extdir_vpath))
+                        edit_set_filename (edit, user_syntax_file_vpath);
+                }
+            }
         }
 
         vfs_path_free (user_syntax_file_vpath, TRUE);
