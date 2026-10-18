@@ -45,11 +45,21 @@ typedef struct
     const void *data;
     int normal_color;        // color of text no rule sets a color for
     const char *skin_group;  // skin section whose _default_ fills colors a rule leaves unset
+    /* The text never changes, so every saved state stays good: keep them all, one per
+       checkpoint_density bytes, and jump to any offset from the nearest one. */
+    gboolean fixed;
+    off_t checkpoint_density;
+    /* With fixed text, never walk more than this many bytes to an offset: start afresh at
+       a line start instead, at the price of a wrong color where a long comment or string
+       began before it.  0 means always walk from the start of the text. */
+    off_t sync_window;
 
     GPtrArray *rules;
     syntax_rule_t rule;  // state at last_get_rule
     off_t last_get_rule;
     GSList *marker;                // saved states, last first
+    GArray *checkpoints;           // saved states of fixed text, by offset
+    gboolean guessed;              // the state at last_get_rule comes from a sync point
     GTree *defines;                // List of defines
     gboolean is_case_insensitive;  // selects language case sensitivity
 } syntax_t;

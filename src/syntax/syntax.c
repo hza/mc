@@ -779,6 +779,112 @@ get_rule (syntax_t *syn, off_t byte_index)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/** Index of the last checkpoint at or before @byte_index, or -1. */
+
+static gssize
+find_checkpoint (const GArray *checkpoints, off_t byte_index)
+{
+    gssize lo = 0, hi = (gssize) checkpoints->len;
+
+    while (lo < hi)
+    {
+        const gssize mid = lo + (hi - lo) / 2;
+
+        if (g_array_index (checkpoints, syntax_marker_t, mid).offset <= byte_index)
+            lo = mid + 1;
+        else
+            hi = mid;
+    }
+
+    return lo - 1;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/** Start of the line around @byte_index, looking back at most @limit bytes. */
+
+static off_t
+sync_point (const syntax_t *syn, off_t byte_index, off_t limit)
+{
+    off_t i;
+
+    for (i = byte_index; i > 0 && byte_index - i < limit; i--)
+        if (syn->get_byte (syn->data, i - 1) == '\n')
+            return i;
+
+    return i;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/** get_rule() for text that does not change: saved states are kept and jumped to. */
+
+static void
+get_rule_fixed (syntax_t *syn, off_t byte_index)
+{
+    const off_t density =
+        syn->checkpoint_density > 0 ? syn->checkpoint_density : SYNTAX_MARKER_DENSITY;
+    gssize c;
+    gboolean ahead;
+    off_t i, from;
+
+    if (syn->checkpoints == NULL)
+        syn->checkpoints = g_array_new (FALSE, FALSE, sizeof (syntax_marker_t));
+
+    c = find_checkpoint (syn->checkpoints, byte_index);
+    // no saved state between where we are and where we go
+    ahead = byte_index > syn->last_get_rule
+        && (c < 0 || g_array_index (syn->checkpoints, syntax_marker_t, c).offset <= syn->last_get_rule);
+
+    // walk on from where we are; a guess is not walked on too far
+    if (ahead && (!syn->guessed || byte_index - syn->last_get_rule <= syn->sync_window))
+        from = syn->last_get_rule;
+    else if (c >= 0)
+    {
+        const syntax_marker_t *s = &g_array_index (syn->checkpoints, syntax_marker_t, c);
+
+        from = s->offset;
+        syn->rule = s->rule;
+        syn->guessed = FALSE;
+    }
+    else
+    {
+        from = -2;
+        memset (&syn->rule, 0, sizeof (syn->rule));
+        syn->guessed = FALSE;
+    }
+
+    if (!syn->guessed && syn->sync_window > 0 && byte_index - from > syn->sync_window)
+    {
+        // too far to walk: the state at the line start before the window is a guess
+        from = sync_point (syn, byte_index - syn->sync_window, syn->sync_window) - 1;
+        memset (&syn->rule, 0, sizeof (syn->rule));
+        syn->guessed = TRUE;
+    }
+
+    for (i = from + 1; i <= byte_index; i++)
+    {
+        apply_rules_going_right (syn, i);
+
+        // a guessed state may be wrong: only keep states known to be right
+        if (!syn->guessed && i % density == 0)
+        {
+            // keep the states sorted and one per stretch of density bytes
+            c = find_checkpoint (syn->checkpoints, i);
+            if (c < 0 || g_array_index (syn->checkpoints, syntax_marker_t, c).offset != i)
+            {
+                syntax_marker_t s = { .offset = i, .rule = syn->rule };
+
+                g_array_insert_val (syn->checkpoints, (guint) (c + 1), s);
+            }
+        }
+    }
+
+    syn->last_get_rule = byte_index;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static int
 translate_rule_to_color (const syntax_t *syn, const syntax_rule_t *rule)
 {
@@ -1646,6 +1752,12 @@ syntax_free (syntax_t *syn)
     g_ptr_array_free (syn->rules, TRUE);
     syn->rules = NULL;
     g_clear_slist (&syn->marker, g_free);
+    if (syn->checkpoints != NULL)
+    {
+        g_array_free (syn->checkpoints, TRUE);
+        syn->checkpoints = NULL;
+    }
+    syn->guessed = FALSE;
     tty_color_free_temp ();
 }
 
@@ -1656,7 +1768,10 @@ syntax_free (syntax_t *syn)
 int
 syntax_get_color (syntax_t *syn, off_t byte_index)
 {
-    get_rule (syn, byte_index);
+    if (syn->fixed)
+        get_rule_fixed (syn, byte_index);
+    else
+        get_rule (syn, byte_index);
     return translate_rule_to_color (syn, &syn->rule);
 }
 

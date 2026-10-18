@@ -15,9 +15,13 @@ LIBS += $(GLIB_LIBS)
 endif
 
 TESTS = \
+	syntax \
 	syntax_scheme
 
 check_PROGRAMS = $(TESTS)
 
 syntax_scheme_SOURCES = \
 	syntax_scheme.c
+
+syntax_SOURCES = \
+	syntax.c
