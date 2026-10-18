@@ -3040,7 +3040,7 @@ Jump to the previous file.
 .B Alt\-r
 Toggle the ruler.
 .TP
-.B Alt\-s
+.B F6
 Toggle syntax highlighting.  The viewer colors text with the rules of the
 internal editor.  In a file larger than a megabyte, a comment or string that
 began more than a megabyte before the shown text may be colored wrong.
@@ -3705,7 +3705,7 @@ on the internal file viewer.
 .TP
 .I mcview_syntax_highlighting
 Color the text in the internal file viewer with the syntax rules of the
-internal editor.  On by default; Alt\-s in the viewer toggles it.
+internal editor.  On by default; F6 in the viewer toggles it.
 .TP
 .I only_leading_plus_minus
 Allow special treatment for '+', '\-', '*' in the command line (select,

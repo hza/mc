@@ -427,7 +427,7 @@ FilePrev = ctrl-b
 SelectCodepage = alt-e
 Shell = ctrl-o
 Ruler = alt-r
-SyntaxOnOff = alt-s
+SyntaxOnOff = f6
 SyntaxSchemeChoose = alt-shift-s
 History = alt-shift-e
 

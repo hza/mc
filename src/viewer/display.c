@@ -101,7 +101,10 @@ mcview_set_buttonbar (WView *view)
             b, 2, view->mode_flags.wrap ? Q_ ("ButtonBar|UnWrap") : Q_ ("ButtonBar|Wrap"), keymap,
             w);
         buttonbar_set_label (b, 4, Q_ ("ButtonBar|Hex"), keymap, w);
-        buttonbar_set_label (b, 6, "", keymap, WIDGET (view));
+        buttonbar_set_label (b, 6,
+                             mcview_syntax_highlighting ? Q_ ("ButtonBar|Plain")
+                                                        : Q_ ("ButtonBar|Syntax"),
+                             keymap, w);
         buttonbar_set_label (b, 7, Q_ ("ButtonBar|Search"), keymap, w);
     }
 

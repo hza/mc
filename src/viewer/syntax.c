@@ -191,6 +191,7 @@ mcview_toggle_syntax_mode (WView *view)
 {
     mcview_syntax_highlighting = !mcview_syntax_highlighting;
     mcview_syntax_unload (view);
+    view->dpy_bbar_dirty = TRUE;
     view->dirty++;
 }
 
