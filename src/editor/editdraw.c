@@ -485,6 +485,46 @@ print_to_widget (WEdit *edit, long row, int start_col, int start_col_real, long 
 }
 
 /* --------------------------------------------------------------------------------------------- */
+/**
+ * End of the line starting at @b, or -1 if it lies too far right to be on screen (a
+ * character takes at most 8 bytes per column).  Trailing whitespace beyond the screen is not
+ * drawn, and scanning a very long line (e.g. a minified file) on every redraw makes typing
+ * slow.
+ */
+
+static off_t
+edit_line_end_if_visible (const WEdit *edit, off_t b, long end_col)
+{
+    const off_t limit = b + (edit->start_col + end_col + 1) * 8;
+    off_t i;
+
+    for (i = b; i < edit->buffer.size; i++)
+    {
+        if (i >= limit)
+            return -1;
+        if (edit_buffer_get_byte (&edit->buffer, i) == '\n')
+            break;
+    }
+
+    return i;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Start of the line after the one starting at @b, drawn on screen row @row.  Below the last
+ * line, return @b, as edit_buffer_get_forward_offset() does, without scanning a long last
+ * line (e.g. a minified file) to its end on every redraw.
+ */
+
+static off_t
+edit_next_line (const WEdit *edit, off_t b, long row)
+{
+    if (edit->start_line + row >= edit->buffer.lines)
+        return b;
+    return edit_buffer_get_forward_offset (&edit->buffer, b, 1, 0);
+}
+
+/* --------------------------------------------------------------------------------------------- */
 /** b is a pointer to the beginning of the line */
 
 static void
@@ -554,7 +594,11 @@ edit_draw_this_line (WEdit *edit, off_t b, long row, long start_col, long end_co
             off_t tws = 0;
 
             if (edit_options.visible_tws && tty_use_colors ())
-                for (tws = edit_buffer_get_eol (&edit->buffer, b); tws > b; tws--)
+            {
+                tws = edit_line_end_if_visible (edit, b, end_col);
+                if (tws < 0)
+                    tws = edit->buffer.size + 1;  // no trailing whitespace on screen
+                for (; tws > b && tws <= edit->buffer.size; tws--)
                 {
                     unsigned int c;
 
@@ -562,6 +606,7 @@ edit_draw_this_line (WEdit *edit, off_t b, long row, long start_col, long end_co
                     if (!whitespace (c))
                         break;
                 }
+            }
 
             while (col <= end_col - edit->start_col)
             {
@@ -884,7 +929,7 @@ render_edit_text (WEdit *edit, long start_row, long start_column, long end_row, 
                 if (key_pending (edit))
                     return;
                 edit_draw_this_line (edit, b, row, start_column, end_column);
-                b = edit_buffer_get_forward_offset (&edit->buffer, b, 1, 0);
+                b = edit_next_line (edit, b, row);
             }
         }
         else
@@ -902,7 +947,7 @@ render_edit_text (WEdit *edit, long start_row, long start_column, long end_row, 
                     if (key_pending (edit))
                         return;
                     edit_draw_this_line (edit, b, row, start_column, end_column);
-                    b = edit_buffer_get_forward_offset (&edit->buffer, b, 1, 0);
+                    b = edit_next_line (edit, b, row);
                 }
             }
 
@@ -917,13 +962,13 @@ render_edit_text (WEdit *edit, long start_row, long start_column, long end_row, 
 
             if ((force & REDRAW_AFTER_CURSOR) != 0 && end_row > curs_row)
             {
-                b = edit_buffer_get_forward_offset (&edit->buffer, b, 1, 0);
+                b = edit_next_line (edit, b, curs_row);
                 for (row = MAX (curs_row + 1, start_row); row <= end_row; row++)
                 {
                     if (key_pending (edit))
                         return;
                     edit_draw_this_line (edit, b, row, start_column, end_column);
-                    b = edit_buffer_get_forward_offset (&edit->buffer, b, 1, 0);
+                    b = edit_next_line (edit, b, row);
                 }
             }
 
@@ -944,7 +989,7 @@ render_edit_text (WEdit *edit, long start_row, long start_column, long end_row, 
             {
                 row = curs_row + 1;
                 b = edit_buffer_get_current_bol (&edit->buffer);
-                b = edit_buffer_get_forward_offset (&edit->buffer, b, 1, 0);
+                b = edit_next_line (edit, b, curs_row);
                 if (row >= start_row && row <= end_row)
                 {
                     if (key_pending (edit))
