@@ -141,7 +141,7 @@ static const global_keymap_ini_t default_filemanager_keymap[] = {
     // View output
     { "Shell", "ctrl-o" },
     { "ShowHidden", "alt-dot" },
-    { "ToggleExclude", "alt-shift-x" },
+    { "ToggleExclude", "alt-slash" },
     { "SplitVertHoriz", "alt-comma" },
     { "ExtendedKeyMap", "ctrl-x" },
     // Select/unselect group
@@ -182,6 +182,7 @@ static const global_keymap_ini_t default_filemanager_x_keymap[] = {
     { "PanelInfo", "i" },
     { "PanelQuickView", "q" },
     { "HotListAdd", "h" },
+    { "OptionsExclude", "slash" },
 #ifdef ENABLE_BACKGROUND
     { "Jobs", "j" },
 #endif

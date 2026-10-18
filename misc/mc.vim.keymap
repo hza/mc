@@ -25,7 +25,7 @@ History = alt-m
 # PanelListing =
 # SetupListingFormat =
 ShowHidden = alt-dot
-ToggleExclude = alt-shift-x
+ToggleExclude = alt-slash
 SplitVertHoriz = alt-comma
 SplitEqual = alt-equal
 SplitMore = shift-l
@@ -58,6 +58,7 @@ ScreenList = alt-prime
 ExtendedKeyMap = ctrl-x
 
 [filemanager:xmap]
+OptionsExclude = slash
 ChangeMode = c
 ChangeOwn = o
 ChangeAttributes = e

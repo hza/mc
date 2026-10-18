@@ -168,6 +168,7 @@ static name_keymap_t command_names[] = {
     ADD_KEYMAP_NAME (EditExtensionsFile),
     ADD_KEYMAP_NAME (EditFileHighlightFile),
     ADD_KEYMAP_NAME (EditExcludeFile),
+    ADD_KEYMAP_NAME (OptionsExclude),
     ADD_KEYMAP_NAME (LinkSymbolicEdit),
     ADD_KEYMAP_NAME (ExternalPanelize),
     ADD_KEYMAP_NAME (Filter),

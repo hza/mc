@@ -300,6 +300,8 @@ create_options_menu (void)
     entries = g_list_prepend (entries, menu_entry_new (_ ("&Configuration..."), CK_Options));
     entries = g_list_prepend (entries, menu_entry_new (_ ("&Layout..."), CK_OptionsLayout));
     entries = g_list_prepend (entries, menu_entry_new (_ ("&Panel options..."), CK_OptionsPanel));
+    entries =
+        g_list_prepend (entries, menu_entry_new (_ ("E&xclude patterns..."), CK_OptionsExclude));
     entries = g_list_prepend (entries, menu_entry_new (_ ("C&onfirmation..."), CK_OptionsConfirm));
     entries = g_list_prepend (entries, menu_entry_new (_ ("&Appearance..."), CK_OptionsAppearance));
     entries = g_list_prepend (entries, menu_entry_new (_ ("Learn &keys..."), CK_LearnKeys));
@@ -1194,6 +1196,9 @@ midnight_execute_cmd (Widget *sender, long command)
         break;
     case CK_EditExcludeFile:
         edit_exclude_cmd ();
+        break;
+    case CK_OptionsExclude:
+        exclude_dialog ();
         break;
     case CK_EditUserMenu:
         edit_mc_menu_cmd ();

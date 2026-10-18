@@ -25,7 +25,7 @@ History = alt-h
 # PanelListing =
 # SetupListingFormat =
 ShowHidden = alt-dot
-ToggleExclude = alt-shift-x
+ToggleExclude = alt-slash
 SplitVertHoriz = alt-comma
 SplitEqual = alt-equal
 SplitMore = alt-shift-right
@@ -58,6 +58,7 @@ EditorViewerHistory = alt-shift-e
 ExtendedKeyMap = ctrl-x
 
 [filemanager:xmap]
+OptionsExclude = slash
 ChangeMode = c
 ChangeOwn = o
 ChangeAttributes = e

@@ -20,6 +20,7 @@
 void exclude_load (void);
 void exclude_free (void);
 gboolean exclude_match (const char *dir, const char *name, size_t len);
+void exclude_dialog (void);
 
 /*** inline functions ****************************************************************************/
 

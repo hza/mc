@@ -148,6 +148,7 @@ enum
     CK_EditExtensionsFile,
     CK_EditFileHighlightFile,
     CK_EditExcludeFile,
+    CK_OptionsExclude,
     CK_LinkSymbolicEdit,
     CK_ExternalPanelize,
     CK_Filter,
