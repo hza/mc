@@ -1,15 +1,50 @@
 # mc slopfork
 
 A fork of [GNU Midnight Commander](https://github.com/MidnightCommander/mc) with
-improvements on top of upstream. So far they are in the editor: modern color schemes for
-syntax highlighting, editing files with Windows (CRLF) line ends without damaging them,
-and a smarter syntax engine.
+improvements on top of upstream: hiding files with exclude patterns in the file manager,
+and in the editor modern color schemes for syntax highlighting, editing files with Windows
+(CRLF) line ends without damaging them, and a smarter syntax engine.
 
 It follows upstream `master` and adds its own commits on top. See the upstream
 [README](../README) for mc itself.
 
 It is developed with [Claude Code](https://claude.com/claude-code) — see the
 [FAQ](#faq) for why it is called a slopfork and why it is a fork at all.
+
+## Hiding files with exclude patterns
+
+Every Mac folder you have touched holds a `.DS_Store`, and USB sticks from Windows bring
+`Thumbs.db`. Other file managers have long been able to hide such files: Total Commander and
+Double Commander have an *ignore list*, VS Code has `files.exclude`, and Finder hides
+`.DS_Store` on its own. Upstream mc can only hide all dot files or none.
+
+This fork adds an exclude list, modelled on VS Code's `files.exclude`. Files and directories
+that match it are not shown in the panels.
+
+- **Name patterns** without `/` hide a name in every directory: `.DS_Store`, `Thumbs.db`,
+  `*.pyc`. Shell wildcards work.
+- **Path patterns** with `/` hide one exact place, and `~` is your home directory:
+  `~/.testcontainers.properties`, `~/Library`.
+- **VS Code patterns paste as they are**: a leading `**/` is ignored.
+
+The list is kept in `~/.config/mc/exclude`, one pattern per line, with `#` for comments. A
+new installation hides `.DS_Store` and `Thumbs.db`.
+
+### Managing the list
+
+**Options → Exclude patterns…** opens the list. The box under it shows the file under the
+cursor in the file panel, or the marked files:
+
+- **Add current** adds them as full paths, with `~` for the home directory. It is the
+  default button, and after it the focus moves to **OK**, so <kbd>Enter</kbd>
+  <kbd>Enter</kbd> hides the current file and saves.
+- **Remove current** takes them out of the list again.
+- **Add**, **Edit** and **Delete** change patterns by hand. Nothing is saved until **OK**.
+
+<kbd>Alt</kbd>-<kbd>/</kbd> shows or hides the excluded files, like
+**Options → Panel options → Use exclude file**; <kbd>Alt</kbd>-<kbd>.</kbd> still toggles dot
+files. **Command → Edit exclude file** opens the file itself in the editor. The panels reload
+as soon as the list changes.
 
 ## Color schemes for syntax highlighting
 
@@ -130,6 +165,44 @@ On macOS with Homebrew, the dependencies are
 
 ## FAQ
 
+### How do I hide `.DS_Store` (or `Thumbs.db`, or other files) in Midnight Commander?
+
+In **mc slopfork**, add the name to the exclude list: **Options → Exclude patterns…**, or put
+one pattern per line in `~/.config/mc/exclude`. `.DS_Store` and `Thumbs.db` are hidden out of
+the box, and <kbd>Alt</kbd>-<kbd>/</kbd> shows them again. See
+[Hiding files with exclude patterns](#hiding-files-with-exclude-patterns).
+
+Upstream GNU Midnight Commander has no exclude list. What it offers:
+
+- <kbd>Alt</kbd>-<kbd>.</kbd> (or **Panel options → Show hidden files**) hides *all* dot files,
+  not only `.DS_Store`.
+- **Left/Right → Filter…** with "Using shell patterns" switched off accepts a regular
+  expression, so `^(?!\.DS_Store$)` hides `.DS_Store`. The filter applies to one panel and is
+  not saved.
+- There is no `MC_IGNORE` environment variable and no ignore setting in the `ini` file;
+  advice that mentions them is wrong. **Listing format…** only chooses the columns.
+
+### How do I use color themes like Dracula, Night Owl or Ayu with Midnight Commander?
+
+Upstream GNU Midnight Commander does not support these themes. It has only **skins**, which
+color the panels, menus and dialogs (**Options → Appearance…** or `mc -S <skin>`). It ships
+its own skins (`modarin256`, `xoria256`, `tokyo-night-16M`, …) and cannot read VS Code or
+Sublime Text themes. The colors of code in the editor are fixed inside each `.syntax` file.
+
+**mc slopfork** adds **color schemes** for the editor, and they are real theme files. Open
+**Options → Color scheme…** (<kbd>Alt</kbd>-<kbd>Shift</kbd>-<kbd>S</kbd>) in the editor and
+move through the list; the open files repaint as you go. Ayu, Catppuccin, Dracula, Gruvbox,
+Night Owl, Nord, Rosé Pine, Solarized and Tokyo Night ship with the fork. Skins work as in
+upstream and still color the rest of mc.
+
+For any other theme, copy its file to `~/.local/share/mc/syntax/schemes/`:
+
+- a VS Code theme: the `.json` file with `tokenColors` from the extension's `themes/` folder;
+- a Sublime Text theme: the `.sublime-color-scheme` file.
+
+It then appears in the same list. See
+[Color schemes for syntax highlighting](#color-schemes-for-syntax-highlighting).
+
 ### Why "slopfork"?
 
 The name comes from the upstream maintainer. When the color scheme work was proposed
@@ -145,9 +218,10 @@ with:
 >
 > — [zyv, PR #5189](https://github.com/MidnightCommander/mc/pull/5189)
 
-He probably meant someone else's fork. But turning up there with a pile of unrequested
-changes would be imposing on its owner, so this slopfork was started instead, and the name
-is worn with a smile. The code is written with Claude Code; every change is tested by
+He probably meant someone else's fork. But turning up there with these changes would
+have meant telling its author "I was sent here because yours is the slopfork", which is not
+a nice way to introduce yourself. So this slopfork was started instead, and the name is
+worn with a smile. The code is written with Claude Code; every change is tested by
 rendering real files in mcedit, and the editor changes have unit tests.
 
 ### Why a fork, and not pull requests upstream?
