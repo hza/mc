@@ -1083,6 +1083,7 @@ save_file_position (const vfs_path_t *filename_vpath, long line, long column, of
     size_t i;
     const size_t len = vfs_path_len (filename_vpath);
     gboolean src_error = FALSE;
+    gboolean first_save;
 
     if (filepos_max_saved_entries == 0)
         filepos_max_saved_entries = mc_config_get_int (mc_global.main_config, CONFIG_APP_SECTION,
@@ -1092,6 +1093,8 @@ save_file_position (const vfs_path_t *filename_vpath, long line, long column, of
     if (fn == NULL)
         goto early_error;
 
+    // with no file yet, there are no old records to keep
+    first_save = !exist_file (fn);
     mc_util_make_backup_if_possible (fn, TMP_SUFFIX);
 
     // open file
@@ -1101,7 +1104,7 @@ save_file_position (const vfs_path_t *filename_vpath, long line, long column, of
 
     tmp_fn = g_strdup_printf ("%s" TMP_SUFFIX, fn);
     tmp_f = fopen (tmp_fn, "r");
-    if (tmp_f == NULL)
+    if (tmp_f == NULL && !first_save)
     {
         src_error = TRUE;
         goto open_source_error;
@@ -1124,7 +1127,7 @@ save_file_position (const vfs_path_t *filename_vpath, long line, long column, of
     }
 
     i = 1;
-    while (fgets (buf, sizeof (buf), tmp_f) != NULL)
+    while (tmp_f != NULL && fgets (buf, sizeof (buf), tmp_f) != NULL)
     {
         if (buf[len] == ' ' && strncmp (buf, filename_str, len) == 0
             && strchr (&buf[len + 1], ' ') == NULL)
@@ -1137,7 +1140,8 @@ save_file_position (const vfs_path_t *filename_vpath, long line, long column, of
 
 write_position_error:
     g_free (filename_str);
-    fclose (tmp_f);
+    if (tmp_f != NULL)
+        fclose (tmp_f);
 open_source_error:
     g_free (tmp_fn);
     fclose (f);
