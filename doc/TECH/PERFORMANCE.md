@@ -154,11 +154,11 @@ pass.
 
 ## Repeating the measurements
 
-The scripts are in [`bench/`](bench/). Each takes the `mc` binary, a file and optionally a
-home directory (for settings, e.g. a chosen color scheme):
+The scripts are in [`maint/bench/`](../../maint/bench/). Each takes the `mc` binary, a file
+and optionally a home directory (for settings, e.g. a chosen color scheme):
 
 ```sh
-cd doc/TECH/bench
+cd maint/bench
 ./open_time.py   /usr/local/bin/mc  FILE [HOME]   # start until the first screen
 ./jump_to_end.py /usr/local/bin/mc  FILE [HOME]   # Ctrl-End: highlight the whole file
 ./key_latency.py /usr/local/bin/mc  FILE [HOME]   # per-key latency; modifies FILE
