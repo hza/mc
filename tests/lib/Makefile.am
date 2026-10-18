@@ -22,6 +22,7 @@ TESTS = \
 	terminal \
 	tty \
 	util__keycode_to_cntrl \
+	util__replace_file \
 	utilunix__mc_pstream_get_string \
 	utilunix__my_system_fork_fail \
 	utilunix__my_system_fork_child_shell \
@@ -55,6 +56,9 @@ tty_SOURCES = \
 
 util__keycode_to_cntrl_SOURCES = \
 	util__keycode_to_cntrl.c
+
+util__replace_file_SOURCES = \
+	util__replace_file.c
 
 utilunix__mc_pstream_get_string_SOURCES = \
 	utilunix__mc_pstream_get_string.c

@@ -200,6 +200,26 @@ mc_util_write_backup_content (const char *from_file_name, const char *to_file_na
 }
 
 /* --------------------------------------------------------------------------------------------- */
+/**
+ * The file that replacing @path replaces: the one a symbolic link points to, so that the link
+ * stays, or @path itself when it does not exist yet.
+ */
+
+static char *
+mc_util_replace_target (const char *path)
+{
+    char *real, *target;
+
+    real = realpath (path, NULL);
+    if (real == NULL)
+        return g_strdup (path);
+
+    target = g_strdup (real);
+    free (real);
+    return target;
+}
+
+/* --------------------------------------------------------------------------------------------- */
 /*** public functions ****************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
 
@@ -1078,14 +1098,13 @@ save_file_position (const vfs_path_t *filename_vpath, long line, long column, of
                     GArray *bookmarks)
 {
     static size_t filepos_max_saved_entries = 0;
-    char *fn, *tmp_fn = NULL;
+    char *fn, *tmp_fn;
     char *filename_str = NULL;
     FILE *f, *old_f;
-    int fd;
     char buf[MC_MAXPATHLEN + 100];
     size_t i;
     const size_t len = vfs_path_len (filename_vpath);
-    gboolean ok = FALSE;
+    gboolean ok;
 
     if (filepos_max_saved_entries == 0)
         filepos_max_saved_entries = mc_config_get_int (mc_global.main_config, CONFIG_APP_SECTION,
@@ -1095,16 +1114,9 @@ save_file_position (const vfs_path_t *filename_vpath, long line, long column, of
     if (fn == NULL)
         goto early_error;
 
-    tmp_fn = g_strdup_printf ("%s.XXXXXX", fn);
-    fd = g_mkstemp (tmp_fn);
-    if (fd == -1)
-        goto early_error;
-    f = fdopen (fd, "w");
+    f = mc_util_replace_begin (fn, &tmp_fn);
     if (f == NULL)
-    {
-        close (fd);
-        goto write_error;
-    }
+        goto early_error;
 
     filename_str = str_escape (vfs_path_as_str (filename_vpath), -1, "", TRUE);
 
@@ -1120,7 +1132,9 @@ save_file_position (const vfs_path_t *filename_vpath, long line, long column, of
 
     // then the old ones; with no file yet there are none
     old_f = fopen (fn, "r");
-    if (old_f != NULL)
+    if (old_f == NULL)
+        ok = errno == ENOENT;
+    else
     {
         i = 1;
         while (fgets (buf, sizeof (buf), old_f) != NULL)
@@ -1136,20 +1150,11 @@ save_file_position (const vfs_path_t *filename_vpath, long line, long column, of
         ok = !ferror (old_f);
         fclose (old_f);
     }
-    else
-        ok = errno == ENOENT;
 
-    // a write error sticks to the stream and shows here
-    ok = !ferror (f) && ok;
-    ok = fclose (f) == 0 && ok;
-    ok = ok && rename (tmp_fn, fn) == 0;
+    (void) mc_util_replace_end (f, tmp_fn, fn, ok);
 
-write_error:
-    if (!ok)
-        unlink (tmp_fn);
 early_error:
     g_free (filename_str);
-    g_free (tmp_fn);
     g_free (fn);
     if (bookmarks != NULL)
         g_array_free (bookmarks, TRUE);
@@ -1264,6 +1269,107 @@ mc_util_unlink_backup_if_possible (const char *file_name, const char *backup_suf
 
     g_free (backup_path);
     return TRUE;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Start replacing the file @path in one step, so that a failure or a crash leaves it as it was:
+ * write the new contents to the returned stream, then call mc_util_replace_end().
+ *
+ * The stream writes to a new file next to the file @path points to, with its permissions.
+ *
+ * @param tmp_path the name of the new file, for mc_util_replace_end()
+ * @return the stream, or NULL on error with errno set
+ */
+
+FILE *
+mc_util_replace_begin (const char *path, char **tmp_path)
+{
+    char *target;
+    struct stat st;
+    int fd;
+    FILE *f;
+
+    target = mc_util_replace_target (path);
+    *tmp_path = g_strdup_printf ("%s.XXXXXX", target);
+    g_free (target);
+
+    fd = g_mkstemp (*tmp_path);
+    if (fd == -1)
+    {
+        MC_PTR_FREE (*tmp_path);
+        return NULL;
+    }
+
+    // the permissions of the old file, or those a new one would get
+    if (stat (path, &st) == 0)
+        (void) fchmod (fd, st.st_mode & 07777);
+    else
+    {
+        const mode_t mask = umask (0);
+
+        umask (mask);
+        (void) fchmod (fd, 0666 & ~mask);
+    }
+
+    f = fdopen (fd, "w");
+    if (f == NULL)
+    {
+        const int saved_errno = errno;
+
+        close (fd);
+        unlink (*tmp_path);
+        MC_PTR_FREE (*tmp_path);
+        errno = saved_errno;
+    }
+
+    return f;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/**
+ * Finish replacing the file @path: close @f and put the new file in place of the old one, if
+ * @ok and every write went well.  Otherwise the new file is removed and the old one stays.
+ *
+ * @param tmp_path the name from mc_util_replace_begin(), free'd here
+ * @return TRUE if the file was replaced, FALSE with errno set otherwise
+ */
+
+gboolean
+mc_util_replace_end (FILE *f, char *tmp_path, const char *path, gboolean ok)
+{
+    int saved_errno = 0;
+
+    // a write error sticks to the stream and shows here
+    if (ferror (f))
+    {
+        ok = FALSE;
+        saved_errno = errno;
+    }
+    if (fclose (f) != 0 && ok)
+    {
+        ok = FALSE;
+        saved_errno = errno;
+    }
+
+    if (ok)
+    {
+        char *target;
+
+        target = mc_util_replace_target (path);
+        ok = rename (tmp_path, target) == 0;
+        saved_errno = errno;
+        g_free (target);
+    }
+
+    if (!ok)
+    {
+        unlink (tmp_path);
+        errno = saved_errno;
+    }
+
+    g_free (tmp_path);
+    return ok;
 }
 
 /* --------------------------------------------------------------------------------------------- */

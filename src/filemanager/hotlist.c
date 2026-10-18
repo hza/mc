@@ -1666,19 +1666,20 @@ save_hotlist (void)
 
     if (!hotlist_state.readonly && hotlist_state.modified && hotlist_file_name != NULL)
     {
-        mc_util_make_backup_if_possible (hotlist_file_name, ".bak");
+        char *tmp_name;
 
-        hotlist_file = fopen (hotlist_file_name, "w");
-        if (hotlist_file == NULL)
-            mc_util_restore_from_backup_if_possible (hotlist_file_name, ".bak");
-        else
+        hotlist_file = mc_util_replace_begin (hotlist_file_name, &tmp_name);
+        if (hotlist_file != NULL)
         {
             hot_save_group (hotlist);
-            fclose (hotlist_file);
+            saved = mc_util_replace_end (hotlist_file, tmp_name, hotlist_file_name, TRUE);
+            hotlist_file = NULL;
+        }
+        if (saved)
+        {
             stat (hotlist_file_name, &stat_buf);
             hotlist_file_mtime = stat_buf.st_mtime;
             hotlist_state.modified = FALSE;
-            saved = TRUE;
         }
     }
 

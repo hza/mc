@@ -276,6 +276,9 @@ gboolean mc_util_make_backup_if_possible (const char *file_name, const char *bac
 gboolean mc_util_restore_from_backup_if_possible (const char *file_name, const char *backup_suffix);
 gboolean mc_util_unlink_backup_if_possible (const char *file_name, const char *backup_suffix);
 
+FILE *mc_util_replace_begin (const char *path, char **tmp_path);
+gboolean mc_util_replace_end (FILE *f, char *tmp_path, const char *path, gboolean ok);
+
 MC_MOCKABLE char *guess_message_value (void);
 
 char *mc_build_filename (const char *first_element, ...);

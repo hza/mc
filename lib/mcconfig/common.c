@@ -50,53 +50,29 @@
 static gboolean
 mc_config_new_or_override_file (mc_config_t *mc_config, const gchar *ini_path, GError **mcerror)
 {
-    gchar *data, *written_data;
-    gsize len, total_written;
+    gchar *data, *tmp_path;
+    gsize len;
+    FILE *f;
     gboolean ret;
-    int fd;
-    ssize_t cur_written;
-    vfs_path_t *ini_vpath;
 
     mc_return_val_if_error (mcerror, FALSE);
 
-    data = g_key_file_to_data (mc_config->handle, &len, NULL);
-    if (!exist_file (ini_path))
-    {
-        ret = g_file_set_contents (ini_path, data, len, mcerror);
-        g_free (data);
-        return ret;
-    }
-
-    mc_util_make_backup_if_possible (ini_path, "~");
-
-    ini_vpath = vfs_path_from_str (ini_path);
-    fd = mc_open (ini_vpath, O_WRONLY | O_TRUNC, 0);
-    vfs_path_free (ini_vpath, TRUE);
-
-    if (fd == -1)
+    f = mc_util_replace_begin (ini_path, &tmp_path);
+    if (f == NULL)
     {
         mc_propagate_error (mcerror, 0, "%s", unix_error_string (errno));
-        g_free (data);
         return FALSE;
     }
 
-    for (written_data = data, total_written = len;
-         (cur_written = mc_write (fd, (const void *) written_data, total_written)) > 0;
-         written_data += cur_written, total_written -= cur_written)
-        ;
-
-    mc_close (fd);
+    data = g_key_file_to_data (mc_config->handle, &len, NULL);
+    ret = fwrite (data, 1, len, f) == len;
     g_free (data);
 
-    if (cur_written == -1)
-    {
-        mc_util_restore_from_backup_if_possible (ini_path, "~");
+    ret = mc_util_replace_end (f, tmp_path, ini_path, ret);
+    if (!ret)
         mc_propagate_error (mcerror, 0, "%s", unix_error_string (errno));
-        return FALSE;
-    }
 
-    mc_util_unlink_backup_if_possible (ini_path, "~");
-    return TRUE;
+    return ret;
 }
 
 /* --------------------------------------------------------------------------------------------- */

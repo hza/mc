@@ -326,17 +326,12 @@ encode (const vfs_path_t *vpath, size_t offset)
 }
 
 /* --------------------------------------------------------------------------------------------- */
-/** Saves the tree to the specified filename */
+/** Writes the tree to @file, named @name in messages */
 
-static int
-tree_store_save_to (char *name)
+static void
+tree_store_save_to (FILE *file, const char *name)
 {
     tree_entry *current;
-    FILE *file;
-
-    file = fopen (name, "w");
-    if (file == NULL)
-        return errno;
 
     fprintf (file, "%s\n", TREE_SIGNATURE);
 
@@ -374,9 +369,6 @@ tree_store_save_to (char *name)
         }
 
     tree_store_dirty (FALSE);
-    fclose (file);
-
-    return 0;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -650,17 +642,21 @@ tree_store_load (void)
 int
 tree_store_save (void)
 {
-    char *name;
-    int retval;
+    char *name, *tmp_name;
+    FILE *file;
+    int retval = 0;
 
     name = mc_config_get_full_path (MC_TREESTORE_FILE);
-    mc_util_make_backup_if_possible (name, ".tmp");
 
-    retval = tree_store_save_to (name);
-    if (retval != 0)
-        mc_util_restore_from_backup_if_possible (name, ".tmp");
+    file = mc_util_replace_begin (name, &tmp_name);
+    if (file == NULL)
+        retval = errno;
     else
-        mc_util_unlink_backup_if_possible (name, ".tmp");
+    {
+        tree_store_save_to (file, name);
+        if (!mc_util_replace_end (file, tmp_name, name, TRUE))
+            retval = errno;
+    }
 
     g_free (name);
     return retval;

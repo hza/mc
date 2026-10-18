@@ -40,7 +40,6 @@
 
 /*** file scope macro definitions ****************************************************************/
 
-#define TMP_SUFFIX ".tmp"
 
 /*** file scope type declarations ****************************************************************/
 
@@ -131,39 +130,31 @@ file_history_list_read (void)
 static void
 file_history_list_write (const GList *file_list)
 {
-    char *fn;
+    char *fn, *tmp_fn;
     FILE *f;
-    gboolean write_error = FALSE;
 
     fn = mc_config_get_full_path (MC_FILEPOS_FILE);
     if (fn == NULL)
         return;
 
-    mc_util_make_backup_if_possible (fn, TMP_SUFFIX);
-
-    f = fopen (fn, "w");
+    f = mc_util_replace_begin (fn, &tmp_fn);
     if (f != NULL)
     {
         GString *s;
 
         s = g_string_sized_new (128);
 
-        for (; file_list != NULL && !write_error; file_list = g_list_next (file_list))
+        for (; file_list != NULL; file_list = g_list_next (file_list))
         {
             file_history_write_entry (file_list->data, s);
-            write_error = (fprintf (f, "%s\n", s->str) < 0);
+            fprintf (f, "%s\n", s->str);
             g_string_truncate (s, 0);
         }
 
         g_string_free (s, TRUE);
 
-        fclose (f);
+        (void) mc_util_replace_end (f, tmp_fn, fn, TRUE);
     }
-
-    if (write_error)
-        mc_util_restore_from_backup_if_possible (fn, TMP_SUFFIX);
-    else
-        mc_util_unlink_backup_if_possible (fn, TMP_SUFFIX);
 
     g_free (fn);
 }
