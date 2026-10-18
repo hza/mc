@@ -942,6 +942,282 @@ edit_fhl_cmd (void)
     mc_filehighlight = mc_fhl_new (TRUE);
 }
 
+static WListbox *fhl_group_list = NULL;
+static Widget *fhl_group_ok = NULL;
+
+/* --------------------------------------------------------------------------------------------- */
+/** Does the ';'-separated extension list of @group contain @ext? */
+
+static gboolean
+fhl_group_has_ext (mc_config_t *cfg, const char *group, const char *ext)
+{
+    gboolean case_sense;
+    gchar **exts, **e;
+    gboolean found = FALSE;
+
+    // mc_config_get_bool() would store the default, and it would be saved
+    case_sense = mc_config_has_param (cfg, group, "extensions_case")
+        && mc_config_get_bool (cfg, group, "extensions_case", FALSE);
+    exts = mc_config_get_string_list (cfg, group, "extensions", NULL);
+    if (exts == NULL)
+        return FALSE;
+
+    for (e = exts; *e != NULL && !found; e++)
+        found = case_sense ? strcmp (*e, ext) == 0 : g_ascii_strcasecmp (*e, ext) == 0;
+
+    g_strfreev (exts);
+    return found;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/** Rewrite the extension list of @group without @ext, and with it at the end if @add */
+
+static void
+fhl_group_set_ext (mc_config_t *cfg, const char *group, const char *ext, gboolean add)
+{
+    gboolean case_sense;
+    gchar **exts, **e;
+    GPtrArray *out;
+
+    // mc_config_get_bool() would store the default, and it would be saved
+    case_sense = mc_config_has_param (cfg, group, "extensions_case")
+        && mc_config_get_bool (cfg, group, "extensions_case", FALSE);
+    exts = mc_config_get_string_list (cfg, group, "extensions", NULL);
+    out = g_ptr_array_new ();
+
+    if (exts != NULL)
+        for (e = exts; *e != NULL; e++)
+            if (**e != '\0'
+                && (case_sense ? strcmp (*e, ext) != 0 : g_ascii_strcasecmp (*e, ext) != 0))
+                g_ptr_array_add (out, *e);
+    if (add)
+        g_ptr_array_add (out, (gpointer) ext);
+
+    mc_config_set_string_list (cfg, group, "extensions", (const gchar *const *) out->pdata,
+                               out->len);
+
+    g_ptr_array_free (out, TRUE);
+    g_strfreev (exts);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/** Can the group under the cursor take the extension? Its row has non-NULL data then. */
+
+static gboolean
+fhl_group_pickable (WListbox *l)
+{
+    void *data = NULL;
+
+    listbox_get_current (l, NULL, &data);
+    return data != NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static lcback_ret_t
+fhl_group_list_cb (WListbox *l)
+{
+    return fhl_group_pickable (l) ? LISTBOX_DONE : LISTBOX_CONT;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static cb_ret_t
+fhl_group_dialog_cb (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
+{
+    WDialog *h = DIALOG (w);
+
+    switch (msg)
+    {
+    case MSG_NOTIFY:
+        // OK only for groups with an extension list
+        if (sender == WIDGET (fhl_group_list))
+        {
+            widget_disable (fhl_group_ok, !fhl_group_pickable (fhl_group_list));
+            return MSG_HANDLED;
+        }
+        break;
+
+    case MSG_UNHANDLED_KEY:
+        if (parm == KEY_F (4))
+        {
+            h->ret_value = B_USER;
+            dlg_close (h);
+            return MSG_HANDLED;
+        }
+        break;
+
+    default:
+        break;
+    }
+
+    return dlg_default_callback (w, sender, msg, parm, data);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/** Pick the filehighlight.ini group of the current file's extension */
+
+void
+highlight_group_cmd (WPanel *panel)
+{
+    const file_entry_t *fe;
+    const char *dot;
+    char *ext, *title;
+    vfs_path_t *sys_vpath, *user_vpath;
+    mc_config_t *cfg;
+    gchar **groups;
+    gsize n, i;
+    int current = -1, pick = -1, ret, cols = 40, lines;
+    WDialog *dlg;
+    WGroup *g;
+    WButton *b_ok, *b_edit, *b_cancel;
+    int bx;
+
+    fe = panel_current_entry (panel);
+    if (fe == NULL)
+        return;
+
+    if (S_ISDIR (fe->st.st_mode) || DIR_IS_DOTDOT (fe->fname->str))
+    {
+        message (D_ERROR, _ ("Highlight group"), _ ("\"%s\" is a directory"), fe->fname->str);
+        return;
+    }
+
+    // the extension, or the whole name when there is none
+    dot = strrchr (fe->fname->str, '.');
+    if (dot == NULL || dot == fe->fname->str || dot[1] == '\0')
+        ext = g_strdup (fe->fname->str);
+    else
+        ext = g_strdup (dot + 1);
+
+    // work on the user file, seeded from the system one
+    sys_vpath = vfs_path_build_filename (mc_global.sysconfig_dir, MC_FHL_INI_FILE, (char *) NULL);
+    user_vpath = mc_config_get_full_vpath (MC_FHL_INI_FILE);
+    check_for_default (sys_vpath, user_vpath);
+    cfg = mc_config_init (vfs_path_as_str (user_vpath), FALSE);
+    vfs_path_free (sys_vpath, TRUE);
+
+    if (cfg == NULL)
+    {
+        message (D_ERROR, MSG_ERROR, _ ("Cannot read %s"), vfs_path_as_str (user_vpath));
+        vfs_path_free (user_vpath, TRUE);
+        g_free (ext);
+        return;
+    }
+
+    groups = mc_config_get_groups (cfg, &n);
+
+    b_ok = button_new (0, 0, B_ENTER, DEFPUSH_BUTTON, _ ("&OK"), NULL);
+    b_edit = button_new (0, 0, B_USER, NORMAL_BUTTON, _ ("&Edit config"), NULL);
+    b_cancel = button_new (0, 0, B_CANCEL, NORMAL_BUTTON, _ ("&Cancel"), NULL);
+    bx = widget_get_columns (WIDGET (b_ok)) + widget_get_columns (WIDGET (b_edit))
+        + widget_get_columns (WIDGET (b_cancel)) + 2;
+
+    title = g_strdup_printf (_ ("Highlight group for \"%s\""), ext);
+    cols = MAX (cols, str_term_width1 (title) + 6);
+    cols = MAX (cols, bx + 6);
+    for (i = 0; i < n; i++)
+        cols = MAX (cols, str_term_width1 (groups[i]) + 18);
+    cols = MIN (cols + 20, COLS - 4);
+    lines = (int) MIN (n, (gsize) MAX (3, LINES - 10));
+
+    dlg = dlg_create (TRUE, 0, 0, lines + 7, cols, WPOS_CENTER, FALSE, dialog_colors,
+                      fhl_group_dialog_cb, NULL, "[Filenames Highlight]", title);
+    g = GROUP (dlg);
+
+    fhl_group_list = listbox_new (2, 2, lines, cols - 4, FALSE, fhl_group_list_cb);
+    for (i = 0; i < n; i++)
+    {
+        const char *kind = "";
+        gboolean has_ext;
+        char *label;
+
+        has_ext = mc_config_has_param (cfg, groups[i], "extensions");
+        if (has_ext)
+        {
+            if (current < 0 && fhl_group_has_ext (cfg, groups[i], ext))
+                current = (int) i;
+        }
+        else if (mc_config_has_param (cfg, groups[i], "type"))
+            kind = _ (" [type]");
+        else if (mc_config_has_param (cfg, groups[i], "regexp"))
+            kind = _ (" [regexp]");
+
+        label = g_strdup_printf ("%c %s%s", current == (int) i ? '*' : ' ', groups[i], kind);
+        listbox_add_item_take (fhl_group_list, LISTBOX_APPEND_AT_END, 0, label,
+                               has_ext ? groups[i] : NULL, FALSE);
+    }
+    if (current >= 0)
+        listbox_set_current (fhl_group_list, current);
+    group_add_widget (g, fhl_group_list);
+
+    group_add_widget (g, hline_new (lines + 3, -1, -1));
+    bx = (cols - bx) / 2;
+    group_add_widget (g, b_ok);
+    widget_set_size (WIDGET (b_ok), WIDGET (dlg)->rect.y + lines + 4, WIDGET (dlg)->rect.x + bx, 1,
+                     widget_get_columns (WIDGET (b_ok)));
+    bx += widget_get_columns (WIDGET (b_ok)) + 1;
+    group_add_widget (g, b_edit);
+    widget_set_size (WIDGET (b_edit), WIDGET (dlg)->rect.y + lines + 4, WIDGET (dlg)->rect.x + bx,
+                     1, widget_get_columns (WIDGET (b_edit)));
+    bx += widget_get_columns (WIDGET (b_edit)) + 1;
+    group_add_widget (g, b_cancel);
+    widget_set_size (WIDGET (b_cancel), WIDGET (dlg)->rect.y + lines + 4, WIDGET (dlg)->rect.x + bx,
+                     1, widget_get_columns (WIDGET (b_cancel)));
+
+    fhl_group_ok = WIDGET (b_ok);
+    widget_disable (fhl_group_ok, !fhl_group_pickable (fhl_group_list));
+    widget_select (WIDGET (fhl_group_list));
+
+    ret = dlg_run (dlg);
+    if (ret == B_ENTER)
+        pick = fhl_group_list->current;
+    widget_destroy (WIDGET (dlg));
+    fhl_group_list = NULL;
+    fhl_group_ok = NULL;
+    g_free (title);
+
+    if (ret == B_USER)
+    {
+        g_strfreev (groups);
+        mc_config_deinit (cfg);
+        vfs_path_free (user_vpath, TRUE);
+        g_free (ext);
+        edit_fhl_cmd ();
+        return;
+    }
+
+    if (pick >= 0 && pick != current)
+    {
+        {
+            GError *mcerror = NULL;
+
+            for (i = 0; i < n; i++)
+                if ((int) i == pick || fhl_group_has_ext (cfg, groups[i], ext))
+                    fhl_group_set_ext (cfg, groups[i], ext, (int) i == pick);
+
+            if (!mc_config_save_file (cfg, &mcerror))
+            {
+                message (D_ERROR, MSG_ERROR, _ ("Cannot save %s:\n%s"),
+                         vfs_path_as_str (user_vpath), mcerror != NULL ? mcerror->message : "");
+                g_clear_error (&mcerror);
+            }
+            else
+            {
+                mc_fhl_free (&mc_filehighlight);
+                mc_filehighlight = mc_fhl_new (TRUE);
+                update_panels (UP_OPTIMIZE, UP_KEEPSEL);
+                repaint_screen ();
+            }
+        }
+    }
+
+    g_strfreev (groups);
+    mc_config_deinit (cfg);
+    vfs_path_free (user_vpath, TRUE);
+    g_free (ext);
+}
+
 /* --------------------------------------------------------------------------------------------- */
 
 void

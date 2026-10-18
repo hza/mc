@@ -59,6 +59,7 @@ ExtendedKeyMap = ctrl-x
 
 [filemanager:xmap]
 ShowExtKeys = x
+HighlightGroup = g
 OptionsExclude = slash
 ChangeMode = c
 ChangeOwn = o

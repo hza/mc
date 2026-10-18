@@ -288,6 +288,8 @@ create_command_menu (void)
     entries = g_list_prepend (entries, menu_entry_new (_ ("Edit &menu file"), CK_EditUserMenu));
     entries = g_list_prepend (
         entries, menu_entry_new (_ ("Edit hi&ghlighting group file"), CK_EditFileHighlightFile));
+    entries = g_list_prepend (
+        entries, menu_entry_new (_ ("Filename highlight gro&up..."), CK_HighlightGroup));
     entries =
         g_list_prepend (entries, menu_entry_new (_ ("Edit exc&lude file"), CK_EditExcludeFile));
 
@@ -1215,6 +1217,9 @@ midnight_execute_cmd (Widget *sender, long command)
         break;
     case CK_EditFileHighlightFile:
         edit_fhl_cmd ();
+        break;
+    case CK_HighlightGroup:
+        highlight_group_cmd (current_panel);
         break;
     case CK_EditExcludeFile:
         edit_exclude_cmd ();

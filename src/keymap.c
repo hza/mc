@@ -185,6 +185,7 @@ static const global_keymap_ini_t default_filemanager_x_keymap[] = {
     { "PanelQuickView", "q" },
     { "HotListAdd", "h" },
     { "ShowExtKeys", "x" },
+    { "HighlightGroup", "g" },
     { "OptionsExclude", "slash" },
 #ifdef ENABLE_BACKGROUND
     { "Jobs", "j" },

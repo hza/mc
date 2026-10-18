@@ -162,7 +162,8 @@ mc_fhl_parse_get_extensions (mc_fhl_t *fhl, const gchar *group_name)
 
     g_strfreev (exts_orig);
 
-    g_string_prepend (buf, ".*\\.(");
+    // an entry matches the extension or, for names without one, the whole name
+    g_string_prepend (buf, "(^|\\.)(");
     g_string_append (buf, ")$");
 
     mc_filter = g_new0 (mc_fhl_filter_t, 1);
