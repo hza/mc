@@ -3395,6 +3395,23 @@ erase_dir (file_op_context_t *ctx, const vfs_path_t *vpath)
 
 /* }}} */
 
+#ifdef ENABLE_BACKGROUND
+/* --------------------------------------------------------------------------------------------- */
+/** In a background job: tell the parent the job is over and exit */
+
+void
+file_op_background_done (file_op_context_t *ctx)
+{
+    /* Send pid to parent with child context, it is fork and
+       don't modify real parent ctx */
+    ctx->pid = getpid ();
+    parent_call ((void *) end_bg_process, ctx, 0);
+
+    vfs_shut ();
+    my_exit (EXIT_SUCCESS);
+}
+#endif
+
 /* --------------------------------------------------------------------------------------------- */
 /* {{{ Panel operate routines */
 

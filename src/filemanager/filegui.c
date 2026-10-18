@@ -151,7 +151,7 @@ statfs (char const *filename, struct fs_info *buf)
 
 #include "filemanager.h"
 
-#include "archive.h"  // archive_dialog()
+#include "archive-dialog.h"  // archive_dialog()
 #include "filegui.h"
 
 /* }}} */
@@ -1032,6 +1032,22 @@ file_progress_ui_create (file_op_context_t *ctx, gboolean with_eta,
 
     // we will manage the dialog without any help, that's why we have to call dlg_init
     dlg_init (ui->op_dlg);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/** Give the progress dialog another title, for operations that are not a plain copy */
+
+void
+file_progress_ui_set_title (file_op_context_t *ctx, const char *title)
+{
+    const file_progress_ui_t *ui = ctx->ui;
+
+    if (ui != NULL && ui->op_dlg != NULL)
+    {
+        frame_set_title (FRAME (ui->op_dlg->bg), title);
+        // the frame draws over the whole dialog: draw the buttons and gauges again
+        widget_draw (WIDGET (ui->op_dlg));
+    }
 }
 
 /* --------------------------------------------------------------------------------------------- */

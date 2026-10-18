@@ -498,6 +498,7 @@ fi
 mc_SUBSHELL
 mc_BACKGROUND
 mc_EXT2FS_ATTR
+mc_LIBARCHIVE
 mc_VFS_CHECKS
 
 dnl ############################################################################
@@ -760,6 +761,7 @@ Configuration:
   With subshell support:          ${subshell}
   With background operations:     ${enable_background}
   With ext2fs attributes support: ${ext2fs_attr_msg}
+  With libarchive:                ${libarchive_msg}
   Internal editor:                ${edit_msg}
   Diff viewer:                    ${diff_msg}
 ])

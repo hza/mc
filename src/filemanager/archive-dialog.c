@@ -20,7 +20,7 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-/** \file src/filemanager/archive.c
+/** \file src/filemanager/archive-dialog.c
  *  \brief Source: dialog to pack the selected files into an archive
  *
  *  Opened from the Copy dialog with F5. Only the dialog exists so far:
@@ -43,7 +43,8 @@
 #include "layout.h"       // get_other_panel()
 #include "panel.h"
 
-#include "archive.h"
+#include "archive-pack.h"
+#include "archive-dialog.h"
 
 /*** global variables ****************************************************************************/
 
@@ -83,14 +84,13 @@ static archive_dropdown_t compression_dropdown = { NULL, NULL, compression_other
 
 static WInput *archive_name;
 static WRadio *archive_format;
+static WRadio *archive_compression;
 static WCheck *archive_encrypt;
 static WButton *archive_encryption;
 
 // encryption options, kept while the dialog is open
 static char *enc_password = NULL;
 static int enc_method = 1;
-static gboolean enc_names = FALSE;
-static int enc_method_id, enc_names_id;  // widget ids in the Encryption options dialog
 
 /* --------------------------------------------------------------------------------------------- */
 /*** file scope functions ************************************************************************/
@@ -107,12 +107,12 @@ archive_suffix (void)
 }
 
 /* --------------------------------------------------------------------------------------------- */
-/** Only zip and 7z can be encrypted */
+/** Only zip can be encrypted: libarchive writes 7z without encryption */
 
 static gboolean
 archive_can_encrypt (void)
 {
-    return archive_format->sel < 2;
+    return archive_format->sel == 0;
 }
 
 /* --------------------------------------------------------------------------------------------- */
@@ -212,28 +212,6 @@ archive_dropdown_cb (WButton *button, int action)
 
 /* --------------------------------------------------------------------------------------------- */
 
-static cb_ret_t
-advanced_dialog_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
-{
-    if (msg == MSG_INIT)
-    {
-        const gboolean is_7z = archive_format->sel == 1;
-        Widget *method, *names;
-
-        method = widget_find_by_id (w, (unsigned long) enc_method_id);
-        names = widget_find_by_id (w, (unsigned long) enc_names_id);
-        // 7z only does AES-256, and only 7z can hide the file names
-        if (method != NULL)
-            widget_disable (method, is_7z);
-        if (names != NULL)
-            widget_disable (names, !is_7z);
-    }
-
-    return dlg_default_callback (w, sender, msg, parm, data);
-}
-
-/* --------------------------------------------------------------------------------------------- */
-
 static int
 archive_advanced_cb (WButton *button, int action)
 {
@@ -252,8 +230,7 @@ archive_advanced_cb (WButton *button, int action)
             g_strdup_printf ("%s%*s", pass_text, label_cols - str_term_width1 (pass_text), "");
         char *confirm_label = g_strdup_printf ("%s%*s", confirm_text,
                                                label_cols - str_term_width1 (confirm_text), "");
-        int method = archive_format->sel == 1 ? 1 : enc_method;
-        gboolean names = enc_names;
+        int method = enc_method;
 
         quick_widget_t quick_widgets[] = {
             // clang-format off
@@ -262,11 +239,7 @@ archive_advanced_cb (WButton *button, int action)
             QUICK_LABELED_INPUT (confirm_label, input_label_left, enc_password != NULL ? enc_password : "",
                                  NULL, &confirm, NULL, TRUE, FALSE, INPUT_COMPLETE_NONE),
             QUICK_SEPARATOR (TRUE),
-            QUICK_START_COLUMNS,
-                QUICK_RADIO (G_N_ELEMENTS (method_items), method_items, &method, &enc_method_id),
-            QUICK_NEXT_COLUMN,
-                QUICK_CHECKBOX (_ ("Encrypt file &names"), &names, &enc_names_id),
-            QUICK_STOP_COLUMNS,
+            QUICK_RADIO (G_N_ELEMENTS (method_items), method_items, &method, NULL),
             QUICK_BUTTONS_OK_CANCEL,
             QUICK_END,
             // clang-format on
@@ -279,7 +252,7 @@ archive_advanced_cb (WButton *button, int action)
             .title = _ ("Encrypt options"),
             .help = "[Pack files]",
             .widgets = quick_widgets,
-            .callback = advanced_dialog_callback,
+            .callback = NULL,
             .mouse_callback = NULL,
         };
 
@@ -301,7 +274,6 @@ archive_advanced_cb (WButton *button, int action)
         enc_password = pass;
         g_free (confirm);
         enc_method = method;
-        enc_names = names;
 
         archive_encrypt->state = TRUE;
         widget_draw (WIDGET (archive_encrypt));
@@ -418,6 +390,78 @@ archive_add_choice (WGroup *g, int y, int x, int cols, const char *title, const 
 }
 
 /* --------------------------------------------------------------------------------------------- */
+/** The compression level of the dialog: Normal, Maximum, or the Other: dropdown */
+
+static int
+archive_level (void)
+{
+    static const int other_levels[] = { 0, 1, 3, ARCHIVE_LEVEL_ULTRA };  // Store .. Ultra
+
+    switch (archive_compression->sel)
+    {
+    case 0:
+        return 6;
+    case 1:
+        return 9;
+    default:
+        return other_levels[compression_dropdown.sel];
+    }
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/** The names to pack: the marked entries, or the current one */
+
+static GPtrArray *
+archive_sources (const WPanel *panel)
+{
+    GPtrArray *names;
+
+    names = g_ptr_array_new_with_free_func (g_free);
+
+    if (panel->marked > 0)
+    {
+        int i;
+
+        for (i = 0; i < panel->dir.len; i++)
+            if (panel->dir.list[i].f.marked != 0 && !DIR_IS_DOTDOT (panel->dir.list[i].fname->str))
+                g_ptr_array_add (names, g_strdup (panel->dir.list[i].fname->str));
+    }
+    else
+    {
+        const file_entry_t *fe;
+
+        fe = panel_current_entry (panel);
+        if (fe != NULL && !DIR_IS_DOTDOT (fe->fname->str))
+            g_ptr_array_add (names, g_strdup (fe->fname->str));
+    }
+
+    return names;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+/** FALSE if the archive exists and the user does not want to overwrite it */
+
+static gboolean
+archive_confirm_target (const archive_pack_opts_t *opts)
+{
+    vfs_path_t *vpath;
+    struct stat st;
+    gboolean ok = TRUE;
+
+    if (opts->archive_path == NULL || *opts->archive_path == '\0')
+        return FALSE;
+
+    vpath = vfs_path_from_str (opts->archive_path);
+    if (mc_stat (vpath, &st) == 0)
+        ok = query_dialog (_ ("Create archive"), _ ("The archive already exists. Overwrite it?"),
+                           D_ERROR, 2, _ ("&Overwrite"), _ ("&Cancel"))
+            == 0;
+    vfs_path_free (vpath, TRUE);
+
+    return ok;
+}
+
+/* --------------------------------------------------------------------------------------------- */
 /*** public functions ****************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
 
@@ -437,10 +481,12 @@ archive_dialog (int cols)
     WDialog *dlg;
     WGroup *g;
     WCheck *move;
+    archive_pack_opts_t opts;
     WButton *buttons[4];
     int n = 0;
     int i, x, ret;
 
+    memset (&opts, 0, sizeof (opts));
     cols = MIN (MAX (cols, 64), COLS - 4);
     half = (cols - 4) / 2;
 
@@ -461,8 +507,9 @@ archive_dialog (int cols)
     // y 4..9: format and compression, each a box of a radio and a dropdown
     archive_format = archive_add_choice (g, 4, 2, half, _ ("Format"), format_items,
                                          G_N_ELEMENTS (format_items), 0, &format_dropdown);
-    archive_add_choice (g, 4, 2 + half, cols - 4 - half, _ ("Compression"), compression_items,
-                        G_N_ELEMENTS (compression_items), 0, &compression_dropdown);
+    archive_compression =
+        archive_add_choice (g, 4, 2 + half, cols - 4 - half, _ ("Compression"), compression_items,
+                            G_N_ELEMENTS (compression_items), 0, &compression_dropdown);
 
     // y 10..13: options
     group_add_widget (g, groupbox_new (10, 2, 4, cols - 4, _ ("Options")));
@@ -497,6 +544,32 @@ archive_dialog (int cols)
     widget_select (WIDGET (archive_name));
 
     ret = dlg_run (dlg);
+
+    if (ret == B_ENTER || ret == B_ARCHIVE_BG)
+    {
+        // an encrypted archive needs a password
+        if (archive_can_encrypt () && archive_encrypt->state
+            && (enc_password == NULL || *enc_password == '\0'))
+            archive_advanced_cb (NULL, 0);
+
+        if (archive_can_encrypt () && archive_encrypt->state
+            && (enc_password == NULL || *enc_password == '\0'))
+            ret = B_CANCEL;
+        else
+        {
+            opts.archive_path = tilde_expand (input_get_ctext (archive_name));
+            opts.format = archive_suffix ();
+            opts.level = archive_level ();
+            opts.move = move->state;
+            if (archive_can_encrypt () && archive_encrypt->state)
+            {
+                opts.password = enc_password;
+                enc_password = NULL;
+                opts.aes = enc_method == 1;
+            }
+        }
+    }
+
     widget_destroy (WIDGET (dlg));
     archive_name = NULL;
     archive_format = NULL;
@@ -506,8 +579,20 @@ archive_dialog (int cols)
     format_dropdown.radio = compression_dropdown.radio = NULL;
     MC_PTR_FREE (enc_password);
 
-    if (ret == B_ENTER || ret == B_ARCHIVE_BG)
-        message (D_NORMAL, _ ("Create archive"), _ ("Packing is not implemented yet."));
+    if ((ret == B_ENTER || ret == B_ARCHIVE_BG) && archive_confirm_target (&opts))
+    {
+        GPtrArray *names;
+
+        names = archive_sources (panel);
+        if (names->len != 0)
+        {
+            archive_pack_run (&opts, panel->cwd_vpath, names, ret == B_ARCHIVE_BG);
+            update_panels (UP_RELOAD, UP_KEEPSEL);
+            repaint_screen ();
+        }
+        g_ptr_array_free (names, TRUE);
+    }
+    archive_pack_opts_free (&opts);
 
     g_free (name);
     g_free (base);

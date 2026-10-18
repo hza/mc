@@ -1,9 +1,9 @@
-/** \file archive.h
+/** \file archive-dialog.h
  *  \brief Header: dialog to pack the selected files into an archive
  */
 
-#ifndef MC__ARCHIVE_H
-#define MC__ARCHIVE_H
+#ifndef MC__ARCHIVE_DIALOG_H
+#define MC__ARCHIVE_DIALOG_H
 
 #include "lib/global.h"
 

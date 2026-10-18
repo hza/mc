@@ -57,6 +57,10 @@ gboolean panel_operate (void *source_panel, FileOperation op, gboolean force_sin
 FileProgressStatus file_error (file_op_context_t *ctx, gboolean allow_retry, const char *format,
                                const char *file);
 
+#ifdef ENABLE_BACKGROUND
+void file_op_background_done (file_op_context_t *ctx);
+#endif
+
 /* return value is FILE_CONT or FILE_ABORT */
 FileProgressStatus compute_dir_size (const vfs_path_t *dirname_vpath, dirsize_status_msg_t *sm,
                                      size_t *ret_dir_count, size_t *ret_marked_count,
