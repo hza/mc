@@ -72,6 +72,7 @@
 #include "panelize.h"
 #include "command.h"  // cmdline
 #include "dir.h"      // dir_list_clean()
+#include "exclude.h"
 
 #ifdef USE_INTERNAL_EDIT
 #include "src/editor/edit.h"
@@ -283,6 +284,8 @@ create_command_menu (void)
     entries = g_list_prepend (entries, menu_entry_new (_ ("Edit &menu file"), CK_EditUserMenu));
     entries = g_list_prepend (
         entries, menu_entry_new (_ ("Edit hi&ghlighting group file"), CK_EditFileHighlightFile));
+    entries =
+        g_list_prepend (entries, menu_entry_new (_ ("Edit exc&lude file"), CK_EditExcludeFile));
 
     return g_list_reverse (entries);
 }
@@ -1070,6 +1073,19 @@ toggle_show_hidden (void)
 
 /* --------------------------------------------------------------------------------------------- */
 
+static void
+toggle_exclude (void)
+{
+    panels_options.use_exclude = !panels_options.use_exclude;
+    // pick up edits made to the exclude file outside mc
+    exclude_load ();
+    update_panels (UP_RELOAD, UP_KEEPSEL);
+    // redraw panels forced
+    update_dirty_panels ();
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static cb_ret_t
 midnight_execute_cmd (Widget *sender, long command)
 {
@@ -1175,6 +1191,9 @@ midnight_execute_cmd (Widget *sender, long command)
         break;
     case CK_EditFileHighlightFile:
         edit_fhl_cmd ();
+        break;
+    case CK_EditExcludeFile:
+        edit_exclude_cmd ();
         break;
     case CK_EditUserMenu:
         edit_mc_menu_cmd ();
@@ -1321,6 +1340,9 @@ midnight_execute_cmd (Widget *sender, long command)
         break;
     case CK_ShowHidden:
         toggle_show_hidden ();
+        break;
+    case CK_ToggleExclude:
+        toggle_exclude ();
         break;
     case CK_SplitVertHoriz:
         toggle_panels_split ();

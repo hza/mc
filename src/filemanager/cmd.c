@@ -86,6 +86,7 @@
 #include "boxes.h"        // cd_box()
 #include "dir.h"
 #include "cd.h"
+#include "exclude.h"
 #include "ioblksize.h"  // IO_BUFSIZE
 
 #include "cmd.h"  // Our definitions
@@ -939,6 +940,25 @@ edit_fhl_cmd (void)
     // refresh highlighting rules
     mc_fhl_free (&mc_filehighlight);
     mc_filehighlight = mc_fhl_new (TRUE);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+void
+edit_exclude_cmd (void)
+{
+    vfs_path_t *sys_vpath;
+    vfs_path_t *user_vpath;
+
+    sys_vpath = vfs_path_build_filename (mc_global.sysconfig_dir, MC_EXCLUDE_FILE, (char *) NULL);
+    user_vpath = mc_config_get_full_vpath (MC_EXCLUDE_FILE);
+    check_for_default (sys_vpath, user_vpath);
+    do_edit (user_vpath);
+    vfs_path_free (user_vpath, TRUE);
+    vfs_path_free (sys_vpath, TRUE);
+
+    exclude_load ();
+    update_panels (UP_RELOAD, UP_KEEPSEL);
 }
 
 /* --------------------------------------------------------------------------------------------- */

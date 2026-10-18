@@ -41,6 +41,7 @@ typedef struct
     gboolean mix_all_files;   // If FALSE then directories are shown separately from files
     gboolean show_backups;    // If TRUE, show files ending in ~
     gboolean show_dot_files;  // If TRUE, show files starting with a dot
+    gboolean use_exclude;     // If TRUE, hide files matching the exclude file
     gboolean fast_reload;     // If TRUE then use stat() on the cwd to determine directory changes
     gboolean fast_reload_msg_shown;  // Have we shown the fast-reload warning in the past?
     gboolean mark_moves_down;        // If TRUE, marking a files moves the cursor down

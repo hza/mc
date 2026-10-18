@@ -62,6 +62,7 @@ void vfs_list (WPanel *panel);
 void ext_cmd (void);
 void edit_mc_menu_cmd (void);
 void edit_fhl_cmd (void);
+void edit_exclude_cmd (void);
 void hotlist_cmd (WPanel *panel);
 void compare_dirs_cmd (void);
 #ifdef USE_DIFF_VIEW

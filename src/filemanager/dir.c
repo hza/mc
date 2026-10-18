@@ -47,6 +47,7 @@
 
 #include "treestore.h"
 #include "file.h"  // file_is_symlink_to_dir()
+#include "exclude.h"
 #include "dir.h"
 
 /*** global variables ****************************************************************************/
@@ -149,8 +150,8 @@ clean_sort_keys (dir_list *list, int start, int count)
  */
 
 static gboolean
-handle_dirent (struct vfs_dirent *dp, const file_filter_t *filter, struct stat *buf1,
-               gboolean *link_to_dir, gboolean *stale_link)
+handle_dirent (const char *dir, struct vfs_dirent *dp, const file_filter_t *filter,
+               struct stat *buf1, gboolean *link_to_dir, gboolean *stale_link)
 {
     vfs_path_t *vpath;
     gboolean ok = TRUE;
@@ -160,6 +161,8 @@ handle_dirent (struct vfs_dirent *dp, const file_filter_t *filter, struct stat *
     if (!panels_options.show_dot_files && (dp->d_name[0] == '.'))
         return FALSE;
     if (!panels_options.show_backups && dp->d_name[dp->d_len - 1] == '~')
+        return FALSE;
+    if (panels_options.use_exclude && exclude_match (dir, dp->d_name, dp->d_len))
         return FALSE;
 
     vpath = vfs_path_from_str (dp->d_name);
@@ -669,7 +672,7 @@ dir_list_load (dir_list *list, const vfs_path_t *vpath, GCompareFunc sort,
         if (list->callback != NULL)
             list->callback (DIR_READ, dp);
 
-        if (!handle_dirent (dp, filter, &st, &link_to_dir, &stale_link))
+        if (!handle_dirent (vfs_path_as_str (vpath), dp, filter, &st, &link_to_dir, &stale_link))
             continue;
 
         if (!dir_list_append (list, dp->d_name, &st, link_to_dir, stale_link))
@@ -788,7 +791,7 @@ dir_list_reload (dir_list *list, const vfs_path_t *vpath, GCompareFunc sort,
         if (list->callback != NULL)
             list->callback (DIR_READ, dp);
 
-        if (!handle_dirent (dp, filter, &st, &link_to_dir, &stale_link))
+        if (!handle_dirent (vfs_path_as_str (vpath), dp, filter, &st, &link_to_dir, &stale_link))
             continue;
 
         if (!dir_list_append (list, dp->d_name, &st, link_to_dir, stale_link))

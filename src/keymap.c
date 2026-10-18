@@ -141,6 +141,7 @@ static const global_keymap_ini_t default_filemanager_keymap[] = {
     // View output
     { "Shell", "ctrl-o" },
     { "ShowHidden", "alt-dot" },
+    { "ToggleExclude", "alt-shift-x" },
     { "SplitVertHoriz", "alt-comma" },
     { "ExtendedKeyMap", "ctrl-x" },
     // Select/unselect group

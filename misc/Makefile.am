@@ -26,6 +26,7 @@ SCRIPTS_OUT = \
 
 LIBFILES_CONST = \
 	filehighlight.ini \
+	exclude \
 	mc.default.keymap \
 	mc.emacs.keymap \
 	mc.vim.keymap

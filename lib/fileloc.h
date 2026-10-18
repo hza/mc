@@ -72,6 +72,7 @@
 #define MC_TREESTORE_FILE               "Tree"
 #define MC_PANELS_FILE                  "panels.ini"
 #define MC_FHL_INI_FILE                 "filehighlight.ini"
+#define MC_EXCLUDE_FILE                 "exclude"
 
 #define MC_SKINS_DIR                    "skins"
 

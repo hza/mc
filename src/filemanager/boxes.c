@@ -724,6 +724,7 @@ panel_options_box (void)
                     QUICK_CHECKBOX (_ ("Mi&x all files"), &panels_options.mix_all_files, NULL),
                     QUICK_CHECKBOX (_ ("Show &backup files"), &panels_options.show_backups, NULL),
                     QUICK_CHECKBOX (_ ("Show &hidden files"), &panels_options.show_dot_files, NULL),
+                    QUICK_CHECKBOX (_ ("Use exc&lude file"), &panels_options.use_exclude, NULL),
                     QUICK_CHECKBOX (_ ("&Fast dir reload"), &panels_options.fast_reload, NULL),
                     QUICK_CHECKBOX (_ ("Ma&rk moves down"), &panels_options.mark_moves_down, NULL),
                     QUICK_CHECKBOX (_ ("Re&verse files only"), &panels_options.reverse_files_only,

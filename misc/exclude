@@ -1,0 +1,6 @@
+# Files hidden from the panels while "Use exclude file" is on.
+# One shell pattern per line, matched against the file name.
+# A leading "**/" is ignored, so VS Code files.exclude patterns work as is.
+
+.DS_Store
+Thumbs.db
