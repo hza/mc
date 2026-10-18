@@ -35,6 +35,7 @@
 #include <config.h>
 
 #include <ctype.h>
+#include <errno.h>
 #include <stddef.h>  // ptrdiff_t
 #include <limits.h>
 #include <stdarg.h>
@@ -63,8 +64,6 @@
 #ifndef TMP_MAX
 #define TMP_MAX 16384
 #endif
-
-#define TMP_SUFFIX ".tmp"
 
 /*** file scope type declarations ****************************************************************/
 
@@ -1069,6 +1068,9 @@ load_file_position (const vfs_path_t *filename_vpath, long *line, long *column, 
 /* --------------------------------------------------------------------------------------------- */
 /**
  * Save position for the given file
+ *
+ * The new record goes first, then the old ones but the one of the same file.  They are written
+ * to a temporary file that replaces the old one when complete, so a failure leaves it as it was.
  */
 
 void
@@ -1076,14 +1078,14 @@ save_file_position (const vfs_path_t *filename_vpath, long line, long column, of
                     GArray *bookmarks)
 {
     static size_t filepos_max_saved_entries = 0;
-    char *fn, *tmp_fn;
+    char *fn, *tmp_fn = NULL;
     char *filename_str = NULL;
-    FILE *f, *tmp_f;
+    FILE *f, *old_f;
+    int fd;
     char buf[MC_MAXPATHLEN + 100];
     size_t i;
     const size_t len = vfs_path_len (filename_vpath);
-    gboolean src_error = FALSE;
-    gboolean first_save;
+    gboolean ok = FALSE;
 
     if (filepos_max_saved_entries == 0)
         filepos_max_saved_entries = mc_config_get_int (mc_global.main_config, CONFIG_APP_SECTION,
@@ -1093,21 +1095,15 @@ save_file_position (const vfs_path_t *filename_vpath, long line, long column, of
     if (fn == NULL)
         goto early_error;
 
-    // with no file yet, there are no old records to keep
-    first_save = !exist_file (fn);
-    mc_util_make_backup_if_possible (fn, TMP_SUFFIX);
-
-    // open file
-    f = fopen (fn, "w");
+    tmp_fn = g_strdup_printf ("%s.XXXXXX", fn);
+    fd = g_mkstemp (tmp_fn);
+    if (fd == -1)
+        goto early_error;
+    f = fdopen (fd, "w");
     if (f == NULL)
-        goto open_target_error;
-
-    tmp_fn = g_strdup_printf ("%s" TMP_SUFFIX, fn);
-    tmp_f = fopen (tmp_fn, "r");
-    if (tmp_f == NULL && !first_save)
     {
-        src_error = TRUE;
-        goto open_source_error;
+        close (fd);
+        goto write_error;
     }
 
     filename_str = str_escape (vfs_path_as_str (filename_vpath), -1, "", TRUE);
@@ -1115,43 +1111,46 @@ save_file_position (const vfs_path_t *filename_vpath, long line, long column, of
     // put the new record
     if (line != 1 || column != 0 || bookmarks != NULL)
     {
-        if (fprintf (f, "%s %ld;%ld;%" PRIuMAX, filename_str, line, column, (uintmax_t) offset) < 0)
-            goto write_position_error;
+        fprintf (f, "%s %ld;%ld;%" PRIuMAX, filename_str, line, column, (uintmax_t) offset);
         if (bookmarks != NULL)
             for (i = 0; i < bookmarks->len && i < MAX_SAVED_BOOKMARKS; i++)
-                if (fprintf (f, ";%zu", g_array_index (bookmarks, size_t, i)) < 0)
-                    goto write_position_error;
-
-        if (fprintf (f, "\n") < 0)
-            goto write_position_error;
+                fprintf (f, ";%zu", g_array_index (bookmarks, size_t, i));
+        fprintf (f, "\n");
     }
 
-    i = 1;
-    while (tmp_f != NULL && fgets (buf, sizeof (buf), tmp_f) != NULL)
+    // then the old ones; with no file yet there are none
+    old_f = fopen (fn, "r");
+    if (old_f != NULL)
     {
-        if (buf[len] == ' ' && strncmp (buf, filename_str, len) == 0
-            && strchr (&buf[len + 1], ' ') == NULL)
-            continue;
+        i = 1;
+        while (fgets (buf, sizeof (buf), old_f) != NULL)
+        {
+            if (buf[len] == ' ' && strncmp (buf, filename_str, len) == 0
+                && strchr (&buf[len + 1], ' ') == NULL)
+                continue;
 
-        fprintf (f, "%s", buf);
-        if (++i > filepos_max_saved_entries)
-            break;
+            fprintf (f, "%s", buf);
+            if (++i > filepos_max_saved_entries)
+                break;
+        }
+        ok = !ferror (old_f);
+        fclose (old_f);
     }
-
-write_position_error:
-    g_free (filename_str);
-    if (tmp_f != NULL)
-        fclose (tmp_f);
-open_source_error:
-    g_free (tmp_fn);
-    fclose (f);
-    if (src_error)
-        mc_util_restore_from_backup_if_possible (fn, TMP_SUFFIX);
     else
-        mc_util_unlink_backup_if_possible (fn, TMP_SUFFIX);
-open_target_error:
-    g_free (fn);
+        ok = errno == ENOENT;
+
+    // a write error sticks to the stream and shows here
+    ok = !ferror (f) && ok;
+    ok = fclose (f) == 0 && ok;
+    ok = ok && rename (tmp_fn, fn) == 0;
+
+write_error:
+    if (!ok)
+        unlink (tmp_fn);
 early_error:
+    g_free (filename_str);
+    g_free (tmp_fn);
+    g_free (fn);
     if (bookmarks != NULL)
         g_array_free (bookmarks, TRUE);
 }
