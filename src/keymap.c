@@ -32,6 +32,8 @@
 #include "lib/fileloc.h"
 #include "lib/keybind.h"
 #include "lib/mcconfig.h"  // mc_config_t
+#include "lib/strutil.h"   // str_term_width1()
+#include "lib/tty/tty.h"   // LINES
 #include "lib/util.h"
 #include "lib/widget.h"  // dialog_map, input_map, listbox_map, menu_map, radio_map
 
@@ -182,6 +184,7 @@ static const global_keymap_ini_t default_filemanager_x_keymap[] = {
     { "PanelInfo", "i" },
     { "PanelQuickView", "q" },
     { "HotListAdd", "h" },
+    { "ShowExtKeys", "x" },
     { "OptionsExclude", "slash" },
 #ifdef ENABLE_BACKGROUND
     { "Jobs", "j" },
@@ -911,8 +914,185 @@ done:
 }
 
 /* --------------------------------------------------------------------------------------------- */
+
+typedef struct
+{
+    const global_keymap_t *map;
+    WListbox *list;
+    WCheck *show;
+} ext_popup_t;
+
+/* --------------------------------------------------------------------------------------------- */
+
+static cb_ret_t
+ext_popup_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
+{
+    WDialog *h = DIALOG (w);
+
+    if (msg == MSG_KEY)
+    {
+        const ext_popup_t *popup = (const ext_popup_t *) h->data.p;
+        size_t i;
+
+        // Enter on the checkbox closes the popup without running anything
+        if (parm == '\n' && popup->show != NULL && GROUP (h)->current->data == popup->show)
+        {
+            h->ret_value = B_CANCEL;
+            dlg_close (h);
+            return MSG_HANDLED;
+        }
+
+        for (i = 0; popup->map[i].key != 0; i++)
+            if (popup->map[i].key == parm)
+            {
+                listbox_set_current (popup->list,
+                                     listbox_search_data (popup->list, &popup->map[i]));
+                h->ret_value = B_ENTER;
+                dlg_close (h);
+                return MSG_HANDLED;
+            }
+    }
+
+    return dlg_default_callback (w, sender, msg, parm, data);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void *
+ext_popup_run (Listbox *listbox, gboolean *show, const WCheck *check)
+{
+    void *val = NULL;
+
+    if (dlg_run (listbox->dlg) != B_CANCEL)
+    {
+        WLEntry *e;
+
+        e = listbox_get_nth_entry (listbox->list, listbox->list->current);
+        if (e != NULL)
+            val = e->data;
+    }
+
+    if (show != NULL && check != NULL)
+        *show = check->state;
+
+    widget_destroy (WIDGET (listbox->dlg));
+    g_free (listbox);
+    return val;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* Titles of prefix commands that have no menu entry */
+static const struct
+{
+    long command;
+    const char *title;
+} ext_popup_titles[] = {
+    { CK_PutCurrentPath, N_ ("Put current path") },
+    { CK_PutOtherPath, N_ ("Put other panel path") },
+    { CK_PutCurrentTagged, N_ ("Put tagged files") },
+    { CK_PutOtherTagged, N_ ("Put other panel tagged files") },
+    { CK_PutCurrentLink, N_ ("Put link target") },
+    { CK_PutOtherLink, N_ ("Put other panel link target") },
+    { CK_HotListAdd, N_ ("Add to directory hotlist") },
+};
+
+/* --------------------------------------------------------------------------------------------- */
+
+static char *
+ext_popup_title (const WMenuBar *menubar, long command)
+{
+    char *title;
+    size_t i;
+
+    title = menubar_get_command_title (menubar, command);
+    if (title != NULL)
+        return title;
+
+    for (i = 0; i < G_N_ELEMENTS (ext_popup_titles); i++)
+        if (ext_popup_titles[i].command == command)
+            return g_strdup (_ (ext_popup_titles[i].title));
+
+    return g_strdup (keybind_lookup_actionname (command));
+}
+
+/* --------------------------------------------------------------------------------------------- */
 /*** public functions ****************************************************************************/
 /* --------------------------------------------------------------------------------------------- */
+
+/**
+ * Show the second keys of a prefix keymap with their commands, titled as in @menubar.
+ * Pressing one of the keys, or choosing a line, returns its command. When @show is not NULL,
+ * a checkbox below the list edits it.
+ *
+ * @return the chosen command, or CK_IgnoreKey when the popup is cancelled.
+ */
+long
+keymap_ext_popup (const global_keymap_t *map, const WMenuBar *menubar, const char *title,
+                  gboolean *show)
+{
+    Listbox *listbox;
+    ext_popup_t popup;
+    const global_keymap_t *chosen;
+    char **titles;
+    size_t i, n;
+    int key_width = 0, cols = 0;
+
+    if (map == NULL || map[0].key == 0)
+        return CK_IgnoreKey;
+
+    for (n = 0; map[n].key != 0; n++)
+        key_width = MAX (key_width, str_term_width1 (map[n].caption));
+
+    titles = g_new (char *, n);
+    for (i = 0; i < n; i++)
+    {
+        titles[i] = ext_popup_title (menubar, map[i].command);
+        cols = MAX (cols, key_width + 2 + str_term_width1 (titles[i]));
+    }
+
+    // room around the longest line
+    cols = MAX (cols + 6, 40);
+
+    /* listbox_window_new() keeps the list within LINES - 6 rows and adds 4 for the frame;
+       the checkbox and its line take 2 more, so leave room for them */
+    listbox = listbox_window_new (MIN ((int) n, LINES - (show != NULL ? 8 : 6)), cols, title,
+                                  "[Miscellaneous Keys]");
+    WIDGET (listbox->dlg)->callback = ext_popup_callback;
+
+    popup.map = map;
+    popup.list = listbox->list;
+    popup.show = NULL;
+    listbox->dlg->data.p = &popup;
+
+    for (i = 0; i < n; i++)
+    {
+        char *text;
+
+        text = g_strdup_printf ("%-*s  %s", key_width, map[i].caption, titles[i]);
+        LISTBOX_APPEND_TEXT (listbox, 0, text, (void *) &map[i], FALSE);
+        g_free (text);
+        g_free (titles[i]);
+    }
+    g_free (titles);
+
+    if (show != NULL)
+    {
+        Widget *dw = WIDGET (listbox->dlg);
+        WRect r = dw->rect;
+
+        r.lines += 2;
+        widget_set_size_rect (dw, &r);
+        group_add_widget (GROUP (listbox->dlg), hline_new (r.lines - 4, -1, -1));
+        popup.show = check_new (r.lines - 3, 3, *show, _ ("Always show this dialog on C-x"));
+        group_add_widget (GROUP (listbox->dlg), popup.show);
+        widget_select (WIDGET (listbox->list));
+    }
+
+    chosen = (const global_keymap_t *) ext_popup_run (listbox, show, popup.show);
+
+    return chosen == NULL ? CK_IgnoreKey : chosen->command;
+}
 
 void
 keymap_load (gboolean load_from_file)

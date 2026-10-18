@@ -52,6 +52,7 @@ void menu_free (menu_t *menu);
 WMenuBar *menubar_new (GList *menu);
 void menubar_set_menu (WMenuBar *menubar, GList *menu);
 void menubar_add_menu (WMenuBar *menubar, menu_t *menu);
+char *menubar_get_command_title (const WMenuBar *menubar, long command);
 void menubar_arrange (WMenuBar *menubar);
 
 WMenuBar *menubar_find (const WDialog *h);

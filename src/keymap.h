@@ -4,6 +4,7 @@
 #include "lib/global.h"
 #include "lib/keybind.h"   // global_keymap_t
 #include "lib/mcconfig.h"  // mc_config_t
+#include "lib/widget.h"    // WMenuBar
 
 /*** typedefs(not structures) and defined constants **********************************************/
 
@@ -58,6 +59,8 @@ extern const global_keymap_t *diff_map;
 
 void keymap_load (gboolean load_from_file);
 void keymap_free (void);
+long keymap_ext_popup (const global_keymap_t *map, const WMenuBar *menubar, const char *title,
+                       gboolean *show);
 
 /*** inline functions ****************************************************************************/
 

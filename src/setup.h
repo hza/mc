@@ -86,6 +86,7 @@ extern gboolean safe_delete;
 extern gboolean safe_overwrite;
 extern gboolean clear_before_exec;
 extern gboolean auto_menu;
+extern gboolean ext_keys_popup;
 extern gboolean drop_menus;
 extern gboolean verbose;
 extern gboolean copymove_persistent_attr;

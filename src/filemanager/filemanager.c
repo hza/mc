@@ -128,6 +128,8 @@ static const label_colors_t prompt_colors = {
 
 /*** forward declarations (file scope functions) *************************************************/
 
+static cb_ret_t midnight_execute_cmd (Widget *sender, long command);
+
 /*** file scope variables ************************************************************************/
 
 static menu_t *left_menu, *right_menu;
@@ -278,6 +280,8 @@ create_command_menu (void)
     entries = g_list_prepend (entries, menu_entry_new (_ ("&Background jobs"), CK_Jobs));
 #endif
     entries = g_list_prepend (entries, menu_entry_new (_ ("Screen lis&t"), CK_ScreenList));
+    entries =
+        g_list_prepend (entries, menu_entry_new (_ ("Show exte&nded commands"), CK_ShowExtKeys));
     entries = g_list_prepend (entries, menu_separator_new ());
     entries = g_list_prepend (entries,
                               menu_entry_new (_ ("Edit &extension file"), CK_EditExtensionsFile));
@@ -1087,6 +1091,24 @@ toggle_exclude (void)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+/** Show the Ctrl+X keys in a popup and run the one chosen */
+
+static cb_ret_t
+show_ext_keys_cmd (Widget *sender)
+{
+    long command;
+
+    command =
+        keymap_ext_popup (filemanager_x_map, the_menubar, _ ("Extended commands"), &ext_keys_popup);
+    if (command == CK_IgnoreKey || command == CK_ExtendedKeyMap || command == CK_ShowExtKeys)
+        return MSG_HANDLED;
+
+    return midnight_execute_cmd (sender, command);
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------------------------------- */
 
 static cb_ret_t
 midnight_execute_cmd (Widget *sender, long command)
@@ -1332,7 +1354,13 @@ midnight_execute_cmd (Widget *sender, long command)
         sort_cmd ();
         break;
     case CK_ExtendedKeyMap:
-        WIDGET (filemanager)->ext_mode = TRUE;
+        if (ext_keys_popup)
+            res = show_ext_keys_cmd (sender);
+        else
+            WIDGET (filemanager)->ext_mode = TRUE;
+        break;
+    case CK_ShowExtKeys:
+        res = show_ext_keys_cmd (sender);
         break;
     case CK_Suspend:
         mc_event_raise (MCEVENT_GROUP_CORE, "suspend", NULL);

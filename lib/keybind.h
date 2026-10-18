@@ -169,6 +169,7 @@ enum
     CK_LinkSymbolic,
     CK_ShowHidden,
     CK_ToggleExclude,
+    CK_ShowExtKeys,
     CK_PanelTree,
     CK_Tree,
     CK_SplitVertHoriz,

@@ -204,6 +204,7 @@ static name_keymap_t command_names[] = {
     ADD_KEYMAP_NAME (HotListAdd),
     ADD_KEYMAP_NAME (ShowHidden),
     ADD_KEYMAP_NAME (ToggleExclude),
+    ADD_KEYMAP_NAME (ShowExtKeys),
     ADD_KEYMAP_NAME (SplitVertHoriz),
     ADD_KEYMAP_NAME (SplitEqual),
     ADD_KEYMAP_NAME (SplitMore),

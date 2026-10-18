@@ -1000,6 +1000,40 @@ menubar_set_menu (WMenuBar *menubar, GList *menu)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+/**
+ * Find the menu entry that runs a command.
+ *
+ * @return the entry's text without the '&' hotkey mark (free it with g_free()), or NULL when no
+ *         entry runs @command.
+ */
+
+char *
+menubar_get_command_title (const WMenuBar *menubar, long command)
+{
+    const GList *m;
+
+    if (menubar == NULL)
+        return NULL;
+
+    for (m = menubar->menu; m != NULL; m = g_list_next (m))
+    {
+        const GList *e;
+
+        for (e = MENU (m->data)->entries; e != NULL; e = g_list_next (e))
+        {
+            const menu_entry_t *entry = MENUENTRY (e->data);
+
+            if (entry != NULL && entry->command == command)
+                return g_strconcat (entry->text.start,
+                                    entry->text.hotkey != NULL ? entry->text.hotkey : "",
+                                    entry->text.end != NULL ? entry->text.end : "", (char *) NULL);
+        }
+    }
+
+    return NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
 
 void
 menubar_add_menu (WMenuBar *menubar, menu_t *menu)

@@ -58,6 +58,7 @@ ScreenList = alt-prime
 ExtendedKeyMap = ctrl-x
 
 [filemanager:xmap]
+ShowExtKeys = x
 OptionsExclude = slash
 ChangeMode = c
 ChangeOwn = o

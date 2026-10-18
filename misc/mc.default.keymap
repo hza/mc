@@ -58,6 +58,7 @@ EditorViewerHistory = alt-shift-e
 ExtendedKeyMap = ctrl-x
 
 [filemanager:xmap]
+ShowExtKeys = x
 OptionsExclude = slash
 ChangeMode = c
 ChangeOwn = o

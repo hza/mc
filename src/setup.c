@@ -68,7 +68,7 @@
 #endif
 
 #include "src/syntax/syntax_scheme.h"  // syntax_scheme_name
-#include "src/viewer/mcviewer.h"  // For the externs
+#include "src/viewer/mcviewer.h"       // For the externs
 
 #include "setup.h"
 
@@ -98,6 +98,8 @@ gboolean confirm_exit = FALSE;
 
 /* If true, at startup the user-menu is invoked */
 gboolean auto_menu = FALSE;
+/* If true, Ctrl+X shows a popup with the keys that can follow it */
+gboolean ext_keys_popup = TRUE;
 /* This flag indicates if the pull down menus by default drop down */
 gboolean drop_menus = FALSE;
 
@@ -296,6 +298,7 @@ static const struct
     { "auto_save_setup", &auto_save_setup },
     { "preallocate_space", &mc_global.vfs.preallocate_space },
     { "auto_menu", &auto_menu },
+    { "ext_keys_popup", &ext_keys_popup },
     { "use_internal_view", &use_internal_view },
     { "use_internal_edit", &use_internal_edit },
     { "clear_before_exec", &clear_before_exec },
