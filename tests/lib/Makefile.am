@@ -17,6 +17,7 @@ EXTRA_DIST = utilunix__my_system-common.c
 TESTS = \
 	library_independ \
 	mc_build_filename \
+	filehighlight_vivid \
 	name_quote \
 	serialize \
 	terminal \
@@ -41,6 +42,9 @@ mc_build_filename_SOURCES = \
 
 mc_realpath_SOURCES = \
 	mc_realpath.c
+
+filehighlight_vivid_SOURCES = \
+	filehighlight_vivid.c
 
 name_quote_SOURCES = \
 	name_quote.c

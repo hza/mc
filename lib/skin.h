@@ -152,6 +152,8 @@ gboolean mc_skin_init (const gchar *skin_override, GError **error);
 void mc_skin_deinit (void);
 
 int mc_skin_color_get (const gchar *group, const gchar *name);
+void mc_skin_color_get_fg_bg_names (const gchar *group, const gchar *name, const char **fg,
+                                    const char **bg);
 
 void mc_skin_lines_parse_ini_file (mc_skin_t *mc_skin);
 

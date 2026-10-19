@@ -58,6 +58,7 @@ static const struct
     // config
     { &mc_config_str, MC_CONFIG_FILE },
     { &mc_config_str, MC_FHL_INI_FILE },
+    { &mc_config_str, MC_FHL_VIVID_DB_FILE },
     { &mc_config_str, MC_EXCLUDE_FILE },
     { &mc_config_str, MC_HOTLIST_FILE },
     { &mc_config_str, GLOBAL_KEYMAP_FILE },

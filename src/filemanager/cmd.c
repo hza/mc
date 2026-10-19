@@ -908,6 +908,18 @@ edit_fhl_cmd (void)
     vfs_path_t *fhlfile_vpath = NULL;
     int dir = 0;
 
+    // the colors come from a vivid theme, so that is the file to edit
+    if (mc_filehighlight != NULL && mc_filehighlight->vivid_theme_path != NULL)
+    {
+        fhlfile_vpath = vfs_path_from_str (mc_filehighlight->vivid_theme_path);
+        do_edit (fhlfile_vpath);
+        vfs_path_free (fhlfile_vpath, TRUE);
+
+        mc_fhl_free (&mc_filehighlight);
+        mc_filehighlight = mc_fhl_new (TRUE);
+        return;
+    }
+
     if (geteuid () == 0)
         dir = query_dialog (_ ("Highlighting groups file edit"),
                             _ ("Which highlighting file you want to edit?"), D_NORMAL, 2,
@@ -1072,6 +1084,15 @@ highlight_group_cmd (WPanel *panel)
     WGroup *g;
     WButton *b_ok, *b_edit, *b_cancel;
     int bx;
+
+    // the groups of filehighlight.ini are not used while a vivid theme provides the colors
+    if (mc_filehighlight != NULL && mc_filehighlight->vivid_theme_path != NULL)
+    {
+        message (D_NORMAL, _ ("Highlighting"),
+                 _ ("Colors come from %s.\nEdit that file to change them."),
+                 mc_filehighlight->vivid_theme_path);
+        return;
+    }
 
     fe = panel_current_entry (panel);
     if (fe == NULL)

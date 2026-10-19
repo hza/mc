@@ -256,6 +256,35 @@ mc_fhl_get_color_filetype (const mc_fhl_filter_t *mc_filter, const mc_fhl_t *fhl
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* --------------------------------------------------------------------------------------------- */
+/** The longest matching suffix of the name wins, as in vivid's generated LS_COLORS. */
+
+static int
+mc_fhl_get_color_suffix (const mc_fhl_filter_t *mc_filter, const file_entry_t *fe)
+{
+    const gchar *name = fe->fname->str;
+    gsize len = fe->fname->len, start, i;
+    gchar key[VIVID_SUFFIX_KEY_MAX + 1];
+
+    start = (len > mc_filter->suffix_max_len) ? len - mc_filter->suffix_max_len : 0;
+    for (i = start; i < len; i++)
+    {
+        gpointer value;
+        gsize key_len = len - i;
+
+        memcpy (key, name + i, key_len);
+        key[key_len] = '\0';
+
+        value = g_hash_table_lookup (mc_filter->suffixes, key);
+        if (value != NULL)
+            return GPOINTER_TO_INT (value) - 1;
+    }
+
+    return -1;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static int
 mc_fhl_get_color_regexp (const mc_fhl_filter_t *mc_filter, const mc_fhl_t *fhl,
                          const file_entry_t *fe)
@@ -299,6 +328,11 @@ mc_fhl_get_color (const mc_fhl_t *fhl, const file_entry_t *fe)
         case MC_FLHGH_T_EXT:
         case MC_FLHGH_T_FREGEXP:
             ret = mc_fhl_get_color_regexp (mc_filter, fhl, fe);
+            if (ret >= 0)
+                return ret;
+            break;
+        case MC_FLHGH_T_SUFFIX:
+            ret = mc_fhl_get_color_suffix (mc_filter, fe);
             if (ret >= 0)
                 return ret;
             break;

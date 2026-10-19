@@ -27,7 +27,8 @@
 #include <config.h>
 
 #include "lib/global.h"
-#include "lib/util.h"  // MC_PTR_FREE
+#include "lib/mcconfig.h"  // CONFIG_APP_SECTION, mc_config_get_string()
+#include "lib/util.h"      // MC_PTR_FREE
 
 #include "lib/filehighlight.h"
 
@@ -57,6 +58,8 @@ mc_fhl_filter_free (gpointer data)
     g_free (filter->fgcolor);
     g_free (filter->bgcolor);
     mc_search_free (filter->search_condition);
+    if (filter->suffixes != NULL)
+        g_hash_table_destroy (filter->suffixes);
     g_free (filter);
 }
 
@@ -85,6 +88,21 @@ mc_fhl_new (gboolean need_auto_fill)
 
     if (!need_auto_fill)
         return fhl;
+
+    // vivid theme when one is chosen (empty means $VIVID_THEME), otherwise filehighlight.ini
+    {
+        const gchar *theme = NULL;
+
+        if (mc_global.main_config != NULL)
+            theme =
+                mc_config_get_string (mc_global.main_config, CONFIG_APP_SECTION, "vivid_theme", "");
+        if (theme == NULL || theme[0] == '\0')
+            theme = g_getenv ("VIVID_THEME");
+
+        if (theme != NULL && theme[0] != '\0' && strcmp (theme, "ini") != 0
+            && mc_fhl_vivid_load (fhl, theme))
+            return fhl;
+    }
 
     if (!mc_fhl_init_from_standard_files (fhl))
     {
@@ -123,6 +141,8 @@ mc_fhl_clear (mc_fhl_t *fhl)
     {
         mc_config_deinit (fhl->config);
         mc_fhl_array_free (fhl);
+        g_free (fhl->vivid_theme_path);
+        fhl->vivid_theme_path = NULL;
     }
 }
 

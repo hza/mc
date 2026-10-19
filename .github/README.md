@@ -80,6 +80,28 @@ dialog.
   failed run leaves nothing half-written behind. An existing archive is only replaced
   after you confirm.
 
+## Vivid color themes
+
+File names in the panels are colored by `filehighlight.ini`, with colors from the skin.
+[vivid](https://github.com/sharkdp/vivid) themes can color them instead: a theme is a
+`themes/<name>.yml` file, and the file types come from `filetypes.yml`. Both are shipped
+in `misc/vivid/` and installed with mc, from vivid commit `efc43e8` (MIT or Apache-2.0,
+see `misc/vivid/`).
+
+- Choose the theme in **Options → Appearance → Vivid theme**. Pick **< None (filehighlight.ini) >**
+  to go back to the ini file. The choice is saved as `vivid_theme` in the mc settings.
+- **< Default >** uses `$VIVID_THEME` when it is set, and the ini file otherwise.
+- Themes and `filetypes.yml` are read from `~/.config/mc/` first, then the system config
+  and data directories. Put your own theme in `~/.config/mc/themes/` to add it to the list.
+- A theme that cannot be read shows an error, and the previous choice is kept.
+- A theme color that the theme leaves out comes from the skin's panel colors, so the
+  background stays the one of the panel. A background the theme sets is kept.
+- With truecolor, theme colors are used as they are. Otherwise they are mapped to the nearest
+  256-color (or 8-color) value.
+- `faint`, `overline` and `rapid-blink` have no mc equivalent and are ignored.
+- **Edit highlighting** opens the theme file in use. **Highlighting group** tells you where the
+  colors come from, since it only edits `filehighlight.ini` groups.
+
 ## Color schemes for syntax highlighting
 
 Syntax files give each keyword and context a **scope token** that says what the text *is*

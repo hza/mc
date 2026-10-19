@@ -14,6 +14,7 @@ typedef struct mc_fhl_struct
 {
     mc_config_t *config;
     GPtrArray *filters;
+    gchar *vivid_theme_path;  // theme file the colors come from, NULL when using the ini file
 } mc_fhl_t;
 
 /*** global variables defined in .c file *********************************************************/
@@ -22,6 +23,10 @@ typedef struct mc_fhl_struct
 
 mc_fhl_t *mc_fhl_new (gboolean need_auto_fill);
 void mc_fhl_free (mc_fhl_t **fhl);
+
+// vivid themes: names of the themes found, and the file of one theme (NULL when not found)
+GPtrArray *mc_fhl_vivid_list_themes (void);
+gchar *mc_fhl_vivid_theme_path (const gchar *theme_name);
 
 int mc_fhl_get_color (const mc_fhl_t *fhl, const file_entry_t *fe);
 

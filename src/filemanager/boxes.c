@@ -261,6 +261,116 @@ sel_skin_button (WButton *button, int action)
 
 /* --------------------------------------------------------------------------------------------- */
 
+/* --------------------------------------------------------------------------------------------- */
+/** Vivid theme values: "" is the default ($VIVID_THEME, else the ini file), "ini" is none */
+
+static const gchar *
+vivid_theme_label (const gchar *value)
+{
+    if (value[0] == '\0')
+        return _ ("< Default >");
+    if (strcmp (value, "ini") == 0)
+        return _ ("< None (filehighlight.ini) >");
+    return value;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static const gchar *
+vivid_theme_current (void)
+{
+    return mc_config_get_string (mc_global.main_config, CONFIG_APP_SECTION, "vivid_theme", "");
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static void
+vivid_theme_apply (const gchar *value)
+{
+    mc_config_set_string (mc_global.main_config, CONFIG_APP_SECTION, "vivid_theme", value);
+    mc_fhl_free (&mc_filehighlight);
+    mc_filehighlight = mc_fhl_new (TRUE);
+    update_panels (UP_OPTIMIZE, UP_KEEPSEL);
+    repaint_screen ();
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+static int
+sel_vivid_button (WButton *button, int action)
+{
+    int result;
+    WListbox *theme_list;
+    WDialog *theme_dlg;
+    GPtrArray *names;
+    gchar *previous;
+    const gchar *current;
+    const gchar *value = NULL;
+    gsize i;
+    unsigned int pos = 0;
+
+    (void) action;
+
+    names = mc_fhl_vivid_list_themes ();
+    current = vivid_theme_current ();
+    previous = g_strdup (current);
+
+    theme_dlg =
+        dlg_create (TRUE, 0, 0, 13, SKIN_NAME_DISPLAY_LEN + 4, WPOS_KEEP_DEFAULT, TRUE,
+                    dialog_colors, skin_dlg_callback, NULL, "[Appearance]", _ ("Vivid theme"));
+    // use Appearance dialog for positioning
+    theme_dlg->data.p = WIDGET (button)->owner;
+
+    // set dialog location before all
+    send_message (theme_dlg, NULL, MSG_RESIZE, 0, NULL);
+
+    theme_list = listbox_new (1, 1, 11, SKIN_NAME_DISPLAY_LEN + 2, FALSE, NULL);
+
+    // the first two entries are not theme names, the rest are the themes found
+    for (i = 0; i < names->len + 2; i++)
+    {
+        const gchar *item = (i == 0) ? "" : (i == 1) ? "ini" : g_ptr_array_index (names, i - 2);
+
+        listbox_add_item (theme_list, LISTBOX_APPEND_AT_END, 0, vivid_theme_label (item),
+                          (void *) item, FALSE);
+        if (strcmp (item, current) == 0)
+            listbox_set_current (theme_list, pos);
+        pos++;
+    }
+
+    group_add_widget_autopos (GROUP (theme_dlg), theme_list, WPOS_KEEP_ALL, NULL);
+
+    result = dlg_run (theme_dlg);
+    if (result == B_ENTER)
+    {
+        gchar *theme_label;
+
+        listbox_get_current (theme_list, &theme_label, (void **) &value);
+
+        vivid_theme_apply (value);
+
+        // a named theme that could not be read falls back to the ini file: go back
+        if (value[0] != '\0' && strcmp (value, "ini") != 0
+            && (mc_filehighlight == NULL || mc_filehighlight->vivid_theme_path == NULL))
+        {
+            message (D_ERROR, MSG_ERROR, _ ("Cannot read vivid theme %s"), value);
+            vivid_theme_apply (previous);
+        }
+
+        button_set_text (button,
+                         str_fit_to_term (vivid_theme_label (vivid_theme_current ()),
+                                          SKIN_NAME_DISPLAY_LEN, J_LEFT_FIT));
+    }
+    widget_destroy (WIDGET (theme_dlg));
+
+    g_free (previous);
+    g_ptr_array_free (names, TRUE);
+
+    return 0;
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 static cb_ret_t
 appearance_box_callback (Widget *w, Widget *sender, widget_msg_t msg, int parm, void *data)
 {
@@ -654,9 +764,11 @@ void
 appearance_box (void)
 {
     const gboolean shadows = mc_global.tty.shadows;
+    gchar *initial_vivid_theme;
 
     current_skin_name = g_strdup (mc_skin__default.name);
     skin_names = mc_skin_list ();
+    initial_vivid_theme = g_strdup (vivid_theme_current ());
 
     {
         quick_widget_t quick_widgets[] = {
@@ -666,6 +778,12 @@ appearance_box (void)
             QUICK_NEXT_COLUMN,
                 QUICK_BUTTON (str_fit_to_term (skin_name_to_label (current_skin_name), SKIN_NAME_DISPLAY_LEN,
                               J_LEFT_FIT), B_USER, sel_skin_button, NULL),
+            QUICK_STOP_COLUMNS,
+            QUICK_START_COLUMNS,
+                QUICK_LABEL (_ ("Vivid theme:"), NULL),
+            QUICK_NEXT_COLUMN,
+                QUICK_BUTTON (str_fit_to_term (vivid_theme_label (initial_vivid_theme), SKIN_NAME_DISPLAY_LEN,
+                              J_LEFT_FIT), B_USER, sel_vivid_button, NULL),
             QUICK_STOP_COLUMNS,
             QUICK_SEPARATOR (TRUE),
             QUICK_CHECKBOX (_ ("&Shadows"), &mc_global.tty.shadows, &shadows_id),
@@ -690,11 +808,15 @@ appearance_box (void)
                                   current_skin_name);
         else
         {
+            // the vivid theme is applied while the dialog is open, so put back the saved one
+            mc_config_set_string (mc_global.main_config, CONFIG_APP_SECTION, "vivid_theme",
+                                  initial_vivid_theme);
             skin_apply (NULL);
             mc_global.tty.shadows = shadows;
         }
     }
 
+    g_free (initial_vivid_theme);
     g_free (current_skin_name);
     g_ptr_array_free (skin_names, TRUE);
 }

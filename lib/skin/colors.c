@@ -445,3 +445,17 @@ mc_skin_color_get (const gchar *group, const gchar *name)
 }
 
 /* --------------------------------------------------------------------------------------------- */
+
+void
+mc_skin_color_get_fg_bg_names (const gchar *group, const gchar *name, const char **fg,
+                               const char **bg)
+{
+    tty_color_pair_t *mc_skin_color;
+
+    mc_skin_color = mc_skin_color_get_with_defaults (group, name);
+
+    *fg = (mc_skin_color != NULL) ? mc_skin_color->fg : NULL;
+    *bg = (mc_skin_color != NULL) ? mc_skin_color->bg : NULL;
+}
+
+/* --------------------------------------------------------------------------------------------- */
