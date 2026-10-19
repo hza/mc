@@ -38,6 +38,16 @@
 
 /*** file scope macro definitions ****************************************************************/
 
+// Keys of a vivid theme style
+#define VIVID_KEY_FOREGROUND "foreground"
+#define VIVID_KEY_BACKGROUND "background"  // only checked for inheritance, the color is ignored
+#define VIVID_KEY_FONT_STYLE "font-style"
+#define VIVID_KEY_COLORS     "colors"
+
+// Skin entry with the panel's own colors, used for colors the theme leaves out
+#define VIVID_SKIN_GROUP "core"
+#define VIVID_SKIN_ENTRY "_default_"
+
 /*** file scope type declarations ****************************************************************/
 
 typedef struct
@@ -267,7 +277,7 @@ mc_fhl_vivid_color_to_mc (const mc_fhl_vivid_ctx_t *ctx, const gchar *value)
 static gboolean
 mc_fhl_vivid_resolve_style (const mc_fhl_vivid_ctx_t *ctx, GStrv path, mc_fhl_vivid_style_t *style)
 {
-    const mc_fhl_yaml_node_t *item = ctx->theme, *fg, *bg, *font;
+    const mc_fhl_yaml_node_t *item = ctx->theme, *fg, *font;
     gsize i;
     GString *attrs;
 
@@ -283,9 +293,9 @@ mc_fhl_vivid_resolve_style (const mc_fhl_vivid_ctx_t *ctx, GStrv path, mc_fhl_vi
         child = mc_fhl_yaml_get (item, path[i]);
         if (child == NULL)
         {
-            if (mc_fhl_yaml_get (item, "foreground") != NULL
-                || mc_fhl_yaml_get (item, "background") != NULL
-                || mc_fhl_yaml_get (item, "font-style") != NULL)
+            if (mc_fhl_yaml_get (item, VIVID_KEY_FOREGROUND) != NULL
+                || mc_fhl_yaml_get (item, VIVID_KEY_BACKGROUND) != NULL
+                || mc_fhl_yaml_get (item, VIVID_KEY_FONT_STYLE) != NULL)
                 break;
             return FALSE;
         }
@@ -295,14 +305,12 @@ mc_fhl_vivid_resolve_style (const mc_fhl_vivid_ctx_t *ctx, GStrv path, mc_fhl_vi
     if (item->kind != MC_FHL_YAML_MAP)
         return FALSE;
 
-    fg = mc_fhl_yaml_get (item, "foreground");
-    bg = mc_fhl_yaml_get (item, "background");
-    font = mc_fhl_yaml_get (item, "font-style");
+    fg = mc_fhl_yaml_get (item, VIVID_KEY_FOREGROUND);
+    font = mc_fhl_yaml_get (item, VIVID_KEY_FONT_STYLE);
 
     if (fg != NULL && fg->kind == MC_FHL_YAML_SCALAR)
         style->fg = g_strdup (fg->scalar);
-    if (bg != NULL && bg->kind == MC_FHL_YAML_SCALAR)
-        style->bg = g_strdup (bg->scalar);
+    // theme backgrounds are ignored: the panel background of the skin is always used
 
     // font-style is one name or a list of names
     attrs = g_string_new (NULL);
@@ -348,7 +356,7 @@ mc_fhl_vivid_style_to_pair (const mc_fhl_vivid_ctx_t *ctx, const mc_fhl_vivid_st
     gchar *fg = NULL, *bg = NULL;
     int pair;
 
-    mc_skin_color_get_fg_bg_names ("core", "_default_", &skin_fg, &skin_bg);
+    mc_skin_color_get_fg_bg_names (VIVID_SKIN_GROUP, VIVID_SKIN_ENTRY, &skin_fg, &skin_bg);
 
     fg = (style->fg != NULL) ? mc_fhl_vivid_color_to_mc (ctx, style->fg) : NULL;
     bg = (style->bg != NULL) ? mc_fhl_vivid_color_to_mc (ctx, style->bg) : NULL;
@@ -641,7 +649,7 @@ mc_fhl_vivid_load (mc_fhl_t *fhl, const gchar *theme_name)
         goto out;
 
     ctx.theme = theme;
-    ctx.colors = mc_fhl_yaml_get (theme, "colors");
+    ctx.colors = mc_fhl_yaml_get (theme, VIVID_KEY_COLORS);
     ctx.codes = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
     ctx.suffixes = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
     ctx.suffix_max_len = 0;

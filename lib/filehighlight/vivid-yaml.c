@@ -32,6 +32,9 @@
 
 /*** file scope macro definitions ****************************************************************/
 
+// The only flow mapping that vivid uses
+#define MC_FHL_YAML_EMPTY_MAP "{}"
+
 /*** file scope type declarations ****************************************************************/
 
 typedef struct
@@ -236,7 +239,7 @@ mc_fhl_yaml_parse_inline (mc_fhl_yaml_ctx_t *ctx, const gchar *s, gsize lineno)
 {
     mc_fhl_yaml_node_t *node;
 
-    if (strcmp (s, "{}") == 0)
+    if (strcmp (s, MC_FHL_YAML_EMPTY_MAP) == 0)
         return mc_fhl_yaml_node_new (MC_FHL_YAML_MAP);
 
     if (s[0] == '[')
@@ -445,7 +448,7 @@ mc_fhl_yaml_parse_map (mc_fhl_yaml_ctx_t *ctx, gsize indent)
                 mc_fhl_yaml_line_t *next = g_ptr_array_index (ctx->lines, ctx->pos);
 
                 if (next->indent > indent
-                    && (strcmp (next->text, "{}") == 0 || next->text[0] == '['))
+                    && (strcmp (next->text, MC_FHL_YAML_EMPTY_MAP) == 0 || next->text[0] == '['))
                 {
                     // a flow value written on the line below its key
                     value = mc_fhl_yaml_parse_inline (ctx, next->text, next->lineno);

@@ -94,8 +94,8 @@ see `misc/vivid/`).
 - Themes and `filetypes.yml` are read from `~/.config/mc/` first, then the system config
   and data directories. Put your own theme in `~/.config/mc/themes/` to add it to the list.
 - A theme that cannot be read shows an error, and the previous choice is kept.
-- A theme color that the theme leaves out comes from the skin's panel colors, so the
-  background stays the one of the panel. A background the theme sets is kept.
+- Backgrounds are not taken from the theme: every entry uses the skin's panel background, so
+  the list keeps one background. A foreground the theme leaves out also comes from the skin.
 - With truecolor, theme colors are used as they are. Otherwise they are mapped to the nearest
   256-color (or 8-color) value.
 - `faint`, `overline` and `rapid-blink` have no mc equivalent and are ignored.
